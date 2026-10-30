@@ -1,0 +1,18 @@
+---
+# Base hostname is the PROD one - the dev overlay patches it. One label under sthomas.ch, so the
+# *.sthomas.ch wildcard cert covers it. The API is ws.std-dive-gas-tracker[-dev].sthomas.ch (backend
+# repo, module std-dive-gas-tracker).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: std-dive-gas-tracker-web
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: kube-system
+  hostnames:
+    - std-dive-gas-tracker.sthomas.ch
+  rules:
+    - backendRefs:
+        - name: std-dive-gas-tracker-web
+          port: 80

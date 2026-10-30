@@ -1,0 +1,7 @@
+---
+# Placeholder name - the dev/ and prod/ overlays rewrite it via `namespace:`.
+# Shared with the dive logger backend and web repos - keep the three identical.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: std-dive-logger

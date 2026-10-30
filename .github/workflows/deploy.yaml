@@ -1,0 +1,115 @@
+name: deploy
+run-name: "deploy ${{ inputs.target || 'dev' }} @ ${{ inputs.tag || github.event.workflow_run.head_branch }}"
+
+# Deploys the built web image to K3s (same namespaces as the dive logger and the gas tracker API).
+#   - after "Build on Tag" succeeds for a v* tag -> auto-deploy to dev, but
+#     ONLY if that tag is reachable from main
+#   - manual "Run workflow" -> pick target (dev / prod) + tag; prod never auto
+# dev pulls :<tag>-staging (staging-mode build); prod pulls :<tag>.
+on:
+  workflow_run:
+    workflows: ["Build on Tag"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      tag:
+        description: Tag to deploy (image must already be built, e.g. v1.2.3)
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-${{ inputs.target || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      target: ${{ steps.check.outputs.target }}
+      ref: ${{ steps.check.outputs.ref }}
+      image_tag: ${{ steps.check.outputs.image_tag }}
+    steps:
+      - id: pre
+        env:
+          EVENT: ${{ github.event_name }}
+          WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WR_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          IN_TARGET: ${{ inputs.target }}
+          IN_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = workflow_dispatch ]; then
+            echo "target=$IN_TARGET" >> "$GITHUB_OUTPUT"
+            echo "ref=$IN_TAG" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$WR_CONCLUSION" = success ] && [[ "$WR_BRANCH" == v* ]]; then
+            echo "target=dev" >> "$GITHUB_OUTPUT"
+            echo "ref=$WR_BRANCH" >> "$GITHUB_OUTPUT"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::build was ${WR_CONCLUSION} for '${WR_BRANCH}' - not deploying"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.pre.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pre.outputs.ref }}
+          fetch-depth: 0
+      - id: check
+        if: steps.pre.outputs.run == 'true'
+        env:
+          TARGET: ${{ steps.pre.outputs.target }}
+          REF: ${{ steps.pre.outputs.ref }}
+        run: |
+          set -euo pipefail
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          if [ "$TARGET" = dev ]; then
+            echo "image_tag=${REF}-staging" >> "$GITHUB_OUTPUT"
+            git fetch origin main --quiet
+            if git merge-base --is-ancestor HEAD origin/main; then
+              echo "proceed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "proceed=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::$REF is not reachable from main - not deploying to dev"
+            fi
+          else
+            echo "image_tag=${REF}" >> "$GITHUB_OUTPUT"
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.gate.outputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.ref }}
+
+      - uses: SebastianThomas/homelab-actions/headscale-connect@v1
+        with:
+          auth-key: ${{ secrets.TS_AUTHKEY }}
+          login-server: ${{ secrets.HEADSCALE_URL }}
+          ping: kube-cp-01
+
+      - uses: SebastianThomas/homelab-actions/kube-deploy@v1
+        with:
+          server: ${{ secrets.KUBE_API }}
+          ca: ${{ secrets.KUBE_CA }}
+          token: ${{ secrets.KUBE_TOKEN }}
+          namespace: std-dive-logger-${{ needs.gate.outputs.target }}
+          manifests: deploy/${{ needs.gate.outputs.target }}
+          images: |
+            WEB_IMAGE=${{ vars.DOCKERHUB_USERNAME }}/std-dive-gas-tracker-web:${{ needs.gate.outputs.image_tag }}
+          rollout: deployment/std-dive-gas-tracker-web
+          rollout-timeout: 180s

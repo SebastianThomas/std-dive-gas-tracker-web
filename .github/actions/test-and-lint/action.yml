@@ -1,0 +1,36 @@
+name: 'Test and Lint Frontend'
+description: 'Type check, lint and unit tests for the frontend'
+inputs:
+  frontend-dir:
+    description: 'Directory containing the frontend code'
+    required: true
+    default: './vue'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'yarn'
+        cache-dependency-path: '${{ inputs.frontend-dir }}/yarn.lock'
+
+    - name: Install dependencies
+      working-directory: ${{ inputs.frontend-dir }}
+      shell: bash
+      run: yarn install --frozen-lockfile
+
+    - name: Type check
+      working-directory: ${{ inputs.frontend-dir }}
+      shell: bash
+      run: yarn type-check
+
+    - name: Lint
+      working-directory: ${{ inputs.frontend-dir }}
+      shell: bash
+      run: yarn lint:check
+
+    - name: Unit tests
+      working-directory: ${{ inputs.frontend-dir }}
+      shell: bash
+      run: yarn test:ci

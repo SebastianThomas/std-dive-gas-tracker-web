@@ -1,0 +1,21 @@
+# dependencies / build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# local env files
+.env*.local
+
+# local agent/tool state (launch.json, settings.local.json) - agent RULES are committed
+# (AGENTS.md, CLAUDE.md, docs/), see docs/DECISIONS.md
+.claude/
+
+# misc
+.DS_Store
+*.pem
+certificates
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

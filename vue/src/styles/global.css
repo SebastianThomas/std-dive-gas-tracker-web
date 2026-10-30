@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+/* `dark:` follows the app's theme toggle (data-theme on <html>, set by stores/theme.ts before the
+   first render), not the OS. Use `dark:` utilities in components - no global colour overrides. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* Wide *and* tall enough for a modal-style card with its own inner scroll area (a phone in
+   landscape is md-wide but only ~375px tall). Same variant as the dive-logger frontend. */
+@custom-variant roomy (@media (min-width: 768px) and (min-height: 640px));
+
+/* Nothing may push the viewport wider than the screen: wide tables scroll in their own box. */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+:root {
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-theme='dark'] body {
+  background: #020617; /* slate-950 */
+  color: #f1f5f9; /* slate-100 */
+}

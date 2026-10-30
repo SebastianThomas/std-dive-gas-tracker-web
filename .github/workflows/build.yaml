@@ -1,0 +1,25 @@
+name: Build
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  FRONTEND_DIR: ./vue
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test and Lint
+        uses: ./.github/actions/test-and-lint
+        with:
+          frontend-dir: ${{ env.FRONTEND_DIR }}
+
+      # Images: build_on_tag.yaml (v* tags), then deploy.yaml.
+      - name: Build
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: yarn build-only
