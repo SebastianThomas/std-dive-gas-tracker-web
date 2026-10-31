@@ -47,12 +47,17 @@
       groupName: 'github-actions',
       automerge: true,
     },
-    // Node runs the build image and CI: a new major can break the tests (Node 26 does, see
-    // docs/DECISIONS.md), so it is never auto-merged, and all places move together.
+    // Node runs the build image and CI: never auto-merged, and all places move together.
     {
       matchPackageNames: ['node'],
       groupName: 'node',
       automerge: false,
+    },
+    // TypeScript 7 has no JS compiler to load: vue-tsc cannot run on it, and typescript-eslint
+    // supports below 6.1. Allow it once both do.
+    {
+      matchPackageNames: ['typescript'],
+      allowedVersions: '<7',
     },
   ],
 }

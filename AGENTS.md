@@ -16,7 +16,7 @@ Mobile-first web app for a team of divers sharing a gas-blending room: record fi
 levels, see and settle what you owe. **It is used standing in the gas room on a phone** — design
 for one hand, big targets, minimal typing. Online-only in v1.
 
-- Frontend: `vue/` — Vue 3 (`<script setup lang="ts">`), Pinia, Vue Router, Vite 7, Vitest,
+- Frontend: `vue/` — Vue 3 (`<script setup lang="ts">`), Pinia, Vue Router, Vite 8, Vitest,
   ESLint + Prettier, Tailwind CSS 4. **Yarn 1** (`yarn.lock` committed).
 - Backend: the separate `std-dive-gas-tracker` Spring Boot module (port 8090 locally).
 - Auth: STD Dive Log accounts. Tokens come from the **dive-logger ws** (`VITE_AUTH_URL`); the gas

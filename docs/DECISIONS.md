@@ -903,3 +903,12 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   name starts from the username, not the email's local part. Existing display names are not
   rewritten. **Add by email** is out of the app but still in the API, with the PENDING flow that
   depends on it: its removal is a separate, larger decision for the human.
+
+## 2026-10-31 — Orchestrator (all Renovate PRs brought forward at once, the human's request)
+
+- `main` was red: ESLint 10 had merged with plugins that do not support it. Moved together to Node 26
+  (CI, image, `@tsconfig/node26`), Vite 8, Vitest 5, jsdom 30, ESLint 10 with current plugins,
+  Pinia 4 (`@vue/devtools-api` is its peer), Vue Router 5, TypeScript 6.0. Vitest 5 on Node 26 also
+  ends the `localStorage` test failure, so the earlier "use Node 20" note no longer applies.
+- **TypeScript 7 held back:** `vue-tsc` loads `typescript/lib/tsc`, which 7 no longer ships, and
+  `typescript-eslint` requires below 6.1. Renovate is limited to `<7` until that changes.

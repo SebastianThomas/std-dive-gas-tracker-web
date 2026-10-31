@@ -7,9 +7,7 @@ import { resolveAuthUrl, resolveUrl } from '../url/resolveUrl'
  * session may still be fine, so the caller must not log out on it. Ported from the dive logger.
  */
 export type RefreshOutcome =
-  | { kind: 'ok'; token: string }
-  | { kind: 'unauthorized' }
-  | { kind: 'unreachable' }
+  { kind: 'ok'; token: string } | { kind: 'unauthorized' } | { kind: 'unreachable' }
 
 const JWT_SHAPE = /^[\w-]+\.[\w-]+\.[\w-]+$/
 const REFRESH_TIMEOUT_MS = 8000
