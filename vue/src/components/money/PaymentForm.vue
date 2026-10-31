@@ -7,7 +7,7 @@
         </option>
       </SelectField>
       <SelectField id="payment-to" v-model="draft.toMemberId" label="To">
-        <option v-for="member in members" :key="member.memberId" :value="member.memberId">
+        <option v-for="member in recipients" :key="member.memberId" :value="member.memberId">
           {{ memberText(member) }}
         </option>
       </SelectField>
@@ -36,7 +36,7 @@ import SelectField from '@/components/ui/SelectField.vue'
 import TextField from '@/components/ui/TextField.vue'
 import type { Member, PaymentInput } from '@/lib/api/types'
 import { parseMoney } from '@/lib/format/number'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 // Money handed over between two members (anyone of the team, also former members settling up).
@@ -57,10 +57,27 @@ const empty = () => ({
 })
 const draft = ref(empty())
 
+// Nobody pays themselves: the payer is no choice in "To", which moves on if it was the new payer.
+const recipients = computed(() =>
+  props.members.filter((member) => member.memberId !== draft.value.fromMemberId),
+)
+watch(
+  () => draft.value.fromMemberId,
+  (fromMemberId) => {
+    if (draft.value.toMemberId === fromMemberId) {
+      draft.value.toMemberId = recipients.value[0]?.memberId ?? 0
+    }
+  },
+)
+
 const memberText = (member: Member) =>
   member.status === 'LEFT' ? `${member.displayName} (left)` : member.displayName
 
 function submit() {
+  if (recipients.value.length === 0) {
+    toast.error('There is nobody else in this team to pay yet.')
+    return
+  }
   const amount = parseMoney(draft.value.amount)
   if (amount === null) {
     toast.error('Enter the amount like 12.50.')
