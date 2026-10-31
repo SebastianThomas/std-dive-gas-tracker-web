@@ -102,7 +102,7 @@ interface Member { memberId: number; username?: string;
 
 | Method | Path | Result |
 |---|---|---|
-| GET / POST / DELETE | `/v1/teams/{teamId}/invite-link` | ADMIN. `{ token? }`: read / replace / turn off |
+| GET / POST / PUT / DELETE | `/v1/teams/{teamId}/invite-link` | ADMIN. `{ token?, canTurnBackOn }`: read / replace with a new link / turn the last link back on (404 if there is none) / turn off (the token is kept) |
 | GET | `/v1/invites/{token}` | `{ teamId, teamName, alreadyMember }`, 404 for a dead link |
 | POST | `/v1/invites/{token}/join` | same; joins as MEMBER, 409 if you left or were removed |
 

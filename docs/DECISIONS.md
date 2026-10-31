@@ -960,3 +960,13 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   retried: a lost connection may have reached the server.
 - **Buttons:** all write actions already use `AppButton`'s `loading`/`ConfirmAction`'s `busy`; the
   rebuilt page was what re-enabled them. No new mechanism.
+
+## 2026-10-31 — Orchestrator (invite link: confirm and turn back on: the human's request)
+
+- **Replacing or turning off the link asks first** (`ConfirmAction`), since people with the link are
+  cut off. Creating a new link while it is off doesn't: the old one is already not working.
+- **Turning off keeps the token** (`invite_link_on`, V1_0_6), `PUT /invite-link` turns the same link
+  on again. The API still shows no `token` while it is off, only `canTurnBackOn`.
+- **The warning about reusing the link stays visible next to both choices** rather than as one more
+  step: the choice is what matters and it costs no extra tap.
+- Links turned off before this change have no token any more, so they can't come back.

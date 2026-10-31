@@ -28,6 +28,8 @@ export function useTeamsApi() {
       (await postWithToken<InviteLink>(`${team(teamId)}/invite-link`)).data,
     turnOffInviteLink: async (teamId: number) =>
       (await deleteWithToken<InviteLink>(`${team(teamId)}/invite-link`)).data,
+    turnOnInviteLink: async (teamId: number) =>
+      (await putWithToken<InviteLink>(`${team(teamId)}/invite-link`)).data,
     previewInvite: async (token: string) =>
       (await getWithToken<InvitePreview>(`/v1/invites/${encodeURIComponent(token)}`)).data,
     joinByInvite: async (token: string) =>

@@ -17,12 +17,37 @@
         <AppButton @click="share">
           <i class="fa-solid fa-share-nodes" aria-hidden="true" />Share
         </AppButton>
-        <AppButton variant="secondary" :loading="busy" @click="reset">New link</AppButton>
-        <AppButton variant="ghost" :loading="busy" @click="turnOff">Turn off</AppButton>
+        <ConfirmAction
+          v-model:open="confirmNew"
+          label="New link"
+          message="The current link stops working for good. Anyone who has not joined yet needs the new one."
+          confirm-label="Create new link"
+          :busy="busy"
+          @confirm="reset"
+        />
+        <ConfirmAction
+          v-model:open="confirmOff"
+          label="Turn off"
+          variant="ghost"
+          message="Nobody can join with this link until it is turned on again."
+          confirm-label="Turn off link"
+          :busy="busy"
+          @confirm="turnOff"
+        />
       </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400">
-        A new link stops the old one from working.
+    </template>
+    <template v-else-if="canTurnBackOn">
+      <p
+        role="status"
+        class="rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-200"
+      >
+        The link is off. Turning it on brings back the last link, so anyone who still has it can
+        join again. If it may have reached the wrong people, create a new link instead.
       </p>
+      <div class="flex flex-wrap gap-2">
+        <AppButton :loading="busy" @click="turnOn">Turn on last link</AppButton>
+        <AppButton variant="secondary" :loading="busy" @click="reset">Create new link</AppButton>
+      </div>
     </template>
     <AppButton v-else-if="!loadError" variant="secondary" :loading="busy" @click="reset">
       Create invite link
@@ -32,7 +57,9 @@
 
 <script setup lang="ts">
 import AppButton from '@/components/ui/AppButton.vue'
+import ConfirmAction from '@/components/ui/ConfirmAction.vue'
 import { useTeamsApi } from '@/lib/api/teams'
+import type { InviteLink } from '@/lib/api/types'
 import { extractErrorDetail } from '@/lib/utils/apiErrors'
 import { inviteUrl } from '@/lib/utils/teams'
 import { computed, onMounted, ref } from 'vue'
@@ -41,22 +68,32 @@ import { toast } from 'vue-sonner'
 // Admin: the team's link, the way in for anyone without looking up a username.
 const props = defineProps<{ teamId: number; teamName: string }>()
 const token = ref<string | null>(null)
+const canTurnBackOn = ref(false)
+const confirmNew = ref(false)
+const confirmOff = ref(false)
 const busy = ref(false)
 const loadError = ref<string | null>(null)
 const link = computed(() => (token.value ? inviteUrl(window.location.origin, token.value) : null))
 
+function show(invite: InviteLink) {
+  token.value = invite.token ?? null
+  canTurnBackOn.value = invite.canTurnBackOn
+}
+
 onMounted(async () => {
   try {
-    token.value = (await useTeamsApi().inviteLink(props.teamId)).token ?? null
+    show(await useTeamsApi().inviteLink(props.teamId))
   } catch (err) {
     loadError.value = extractErrorDetail(err)
   }
 })
 
-async function reset() {
+async function change(request: () => Promise<InviteLink>) {
   busy.value = true
   try {
-    token.value = (await useTeamsApi().resetInviteLink(props.teamId)).token ?? null
+    show(await request())
+    confirmNew.value = false
+    confirmOff.value = false
   } catch (err) {
     toast.error(extractErrorDetail(err))
   } finally {
@@ -64,17 +101,9 @@ async function reset() {
   }
 }
 
-async function turnOff() {
-  busy.value = true
-  try {
-    await useTeamsApi().turnOffInviteLink(props.teamId)
-    token.value = null
-  } catch (err) {
-    toast.error(extractErrorDetail(err))
-  } finally {
-    busy.value = false
-  }
-}
+const reset = () => change(() => useTeamsApi().resetInviteLink(props.teamId))
+const turnOff = () => change(() => useTeamsApi().turnOffInviteLink(props.teamId))
+const turnOn = () => change(() => useTeamsApi().turnOnInviteLink(props.teamId))
 
 /** The phone's share sheet where there is one, else the clipboard. */
 async function share() {

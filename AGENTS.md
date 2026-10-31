@@ -35,7 +35,7 @@ one primary action per screen, the usual fill recorded with a cylinder size and 
   bank" (TRUE_UP), "Shared loss pool" (POOLED), "estimate" (provisional). One line of helper text
   beats a dialog.
 - No screen, setting, filter, toggle or chart that no PLAN task asks for. Confirmation dialogs only
-  for void fill / close bank / delete payment / remove member.
+  for void fill / close bank / delete payment / remove member / replace or turn off the invite link.
 - Fewer components beat clever ones: a view + a couple of feature components; no generic
   form/table frameworks, no extra state libraries.
 

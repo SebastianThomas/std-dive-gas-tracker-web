@@ -172,7 +172,7 @@ export interface paths {
       cookie?: never
     }
     get: operations['inviteLink']
-    put?: never
+    put: operations['turnOnInviteLink']
     post: operations['resetInviteLink']
     delete: operations['turnOffInviteLink']
     options?: never
@@ -802,6 +802,7 @@ export interface components {
       o2: number
     }
     InviteLink: {
+      canTurnBackOn: boolean
       token?: string
     }
     InvitePreview: {
@@ -1711,6 +1712,28 @@ export interface operations {
     }
   }
   inviteLink: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['InviteLink']
+        }
+      }
+    }
+  }
+  turnOnInviteLink: {
     parameters: {
       query?: never
       header?: never
