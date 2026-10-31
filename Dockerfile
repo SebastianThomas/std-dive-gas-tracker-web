@@ -1,5 +1,7 @@
 # ---------- builder ----------
 FROM node:26-slim AS builder
+# Node images no longer ship Yarn; the project stays on Yarn 1 (yarn.lock).
+RUN npm install --global yarn@1.22.22
 WORKDIR /app
 
 # staging (dev deploy) or production: Vite bakes the API URLs of vue/.env.<mode> into the bundle.

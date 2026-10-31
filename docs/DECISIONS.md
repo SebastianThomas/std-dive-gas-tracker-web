@@ -929,3 +929,5 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   address. The token's `sub` is still checked for shape by the decoder; the value is discarded.
 - A first request with a token from before usernames gets the display name "Diver", never one
   derived from the email. Display names already derived from an email are not rewritten.
+- **Yarn in the image:** `node:26-slim` has neither Yarn nor Corepack, so the Dockerfile installs Yarn
+  1.22.22 itself. The checks never built the image, which is why the Node 26 update did not catch it.
