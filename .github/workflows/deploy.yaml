@@ -59,7 +59,7 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.pre.outputs.run == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.pre.outputs.ref }}
           fetch-depth: 0
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ needs.gate.outputs.target }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.gate.outputs.ref }}
 
