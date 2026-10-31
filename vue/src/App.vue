@@ -14,13 +14,19 @@
     </div>
     <RouterView :key="auth.sessionVersion" class="flex-1" />
   </div>
+  <SessionExpiredDialog
+    v-if="auth.sessionExpired && route.name !== 'Login'"
+    @logout="handleLogout"
+  />
 </template>
 
 <script setup lang="ts">
 import 'vue-sonner/style.css'
 
+import SessionExpiredDialog from '@/components/auth/SessionExpiredDialog.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSessionStore } from '@/stores/session'
 import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Toaster } from 'vue-sonner'
@@ -28,13 +34,21 @@ import { Toaster } from 'vue-sonner'
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const session = useSessionStore()
 
-// A session that ends while a page is open (token rejected, refresh refused) goes to the login. It
-// can end during the first navigation too (the header's first request): wait for the page to exist.
+// Not the previous person's name and teams in the header.
+watch(
+  () => auth.sessionVersion,
+  () => session.clear(),
+)
+
+// A session that ends while a page is open stays on it, with SessionExpiredDialog on top. Any other
+// end of a login goes to the login page. It can happen during the first navigation too (the
+// header's first request): wait for the page to exist.
 watch(
   () => auth.isLoggedIn,
   async (loggedIn, wasLoggedIn) => {
-    if (!wasLoggedIn || loggedIn) return
+    if (!wasLoggedIn || loggedIn || auth.sessionExpired) return
     await router.isReady()
     if (!auth.isLoggedIn && route.matched.some((r) => r.meta.requiresAuth)) {
       await router.replace({ name: 'Login', query: { from: route.fullPath } })

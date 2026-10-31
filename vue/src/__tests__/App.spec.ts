@@ -4,8 +4,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSessionStore } from '@/stores/session'
 
 const page = { template: '<div />' }
+const tokenFor = (uid: number, name = 'x') =>
+  `h.${btoa(JSON.stringify({ uid, name })).replace(/=+$/, '')}.s`
 
 function setUp() {
   setActivePinia(createPinia())
@@ -53,6 +56,36 @@ describe('App: a session that ends', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('Login')
+  })
+
+  it('keeps the page and its data when the same person renews the session', async () => {
+    const router = setUp()
+    const auth = useAuthStore()
+    const session = useSessionStore()
+    auth.login(tokenFor(1))
+    await router.push('/t/1')
+    mountApp(router)
+    session.me = { userId: 1, displayName: 'Dana', teams: [] }
+
+    auth.login(tokenFor(1, 'renewed'))
+    await flushPromises()
+
+    expect(session.me).not.toBeNull()
+  })
+
+  it("forgets the previous person's data when someone else logs in", async () => {
+    const router = setUp()
+    const auth = useAuthStore()
+    const session = useSessionStore()
+    auth.login(tokenFor(1))
+    await router.push('/t/1')
+    mountApp(router)
+    session.me = { userId: 1, displayName: 'Dana', teams: [] }
+
+    auth.login(tokenFor(2))
+    await flushPromises()
+
+    expect(session.me).toBeNull()
   })
 
   it('stays put on a page that needs no login', async () => {

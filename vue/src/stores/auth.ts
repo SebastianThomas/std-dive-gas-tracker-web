@@ -1,6 +1,6 @@
 import { devLogin, logoutOnServer, refreshAccessToken } from '@/lib/globals/auth/refreshToken'
 import { isDevLoginEnabled } from '@/lib/globals/constants'
-import { isJwtExpired } from '@/lib/utils/jwt'
+import { isJwtExpired, jwtOwner } from '@/lib/utils/jwt'
 import { forgetInvite } from '@/lib/utils/pendingInvite'
 import { safeLocalStorage } from '@/lib/utils/safeLocalStorage'
 import { defineStore } from 'pinia'
@@ -19,8 +19,13 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string | null>(null)
   const status = ref<SessionStatus>('checking')
   const initialCheckDone = ref(false)
-  /** Bumped on every login/logout so in-flight requests of an old session are dropped. */
+  /** Bumped when another person logs in or out: their pages and in-flight requests are dropped. */
   const sessionVersion = ref(0)
+  /** The session ran out with a page open: it stays, its requests wait for the same person's login. */
+  const sessionExpired = ref(false)
+  let owner: string | null = null
+  /** Bumped by every login/logout: a refresh started before it no longer counts. */
+  let loginCount = 0
   let refreshPromise: Promise<string | null> | null = null
 
   const isLoggedIn = computed(() => accessToken.value !== null)
@@ -29,21 +34,53 @@ export const useAuthStore = defineStore('auth', () => {
   )
 
   function login(token: string, options: { devToken?: boolean } = {}) {
-    sessionVersion.value++
+    const newOwner = jwtOwner(token)
+    if (newOwner !== owner) sessionVersion.value++
+    owner = newOwner
+    loginCount++
     refreshPromise = null
     accessToken.value = token
     status.value = 'authenticated'
     initialCheckDone.value = true
+    sessionExpired.value = false
     if (options.devToken) safeLocalStorage.setItem(DEV_TOKEN_KEY, token)
   }
 
-  function clearSession() {
-    sessionVersion.value++
+  function dropTokens() {
+    loginCount++
     refreshPromise = null
     accessToken.value = null
     status.value = 'anonymous'
     initialCheckDone.value = true
     safeLocalStorage.removeItem(DEV_TOKEN_KEY)
+  }
+
+  function clearSession() {
+    sessionVersion.value++
+    owner = null
+    dropTokens()
+    sessionExpired.value = false
+  }
+
+  /** The server refused to renew the session: nobody yet is simply logged out. */
+  function endSession() {
+    if (owner === null) {
+      clearSession()
+    } else {
+      dropTokens()
+      sessionExpired.value = true
+    }
+  }
+
+  /** The token after the login a request is waiting for; null at once without an expired session. */
+  function waitForLogin(): Promise<string | null> {
+    if (!sessionExpired.value) return Promise.resolve(accessToken.value)
+    return new Promise((resolve) => {
+      const stop = watch(sessionExpired, () => {
+        stop()
+        resolve(accessToken.value)
+      })
+    })
   }
 
   async function logout() {
@@ -60,7 +97,7 @@ export const useAuthStore = defineStore('auth', () => {
   /** A fresh access token, or null (then `status` says why). Concurrent callers share one call. */
   function refreshToken(): Promise<string | null> {
     if (refreshPromise) return refreshPromise
-    const version = sessionVersion.value
+    const started = loginCount
     // Deferred via then(): the body must not run before `pending` is assigned (finally reads it).
     const pending: Promise<string | null> = Promise.resolve().then(async () => {
       try {
@@ -69,20 +106,20 @@ export const useAuthStore = defineStore('auth', () => {
           // Expired, or the token just in use (the server rejected it, e.g. a restarted backend
           // with a new dev-login key): logging it in again would loop request → 401 → refresh.
           if (isJwtExpired(stored) || stored === accessToken.value) {
-            clearSession()
+            endSession()
             return null
           }
           login(stored)
           return stored
         }
         const outcome = await refreshAccessToken()
-        if (version !== sessionVersion.value) return null
+        if (started !== loginCount) return null
         if (outcome.kind === 'ok') {
           login(outcome.token)
           return outcome.token
         }
         if (outcome.kind === 'unauthorized') {
-          clearSession()
+          endSession()
         } else {
           status.value = 'unreachable'
         }
@@ -120,12 +157,14 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken,
     status,
     sessionVersion,
+    sessionExpired,
     isLoggedIn,
     usesDevToken,
     login,
     logout,
     loginWithDevToken,
     refreshToken,
+    waitForLogin,
     waitForInitialCheck,
     tryInitialLogin,
   }

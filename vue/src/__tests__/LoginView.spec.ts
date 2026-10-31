@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import LoginView from '@/views/LoginView.vue'
+import { useAuthStore } from '@/stores/auth'
 
 async function mountLogin() {
   const router = createRouter({
@@ -10,6 +11,7 @@ async function mountLogin() {
     routes: [
       { path: '/', name: 'Home', component: { template: '<div />' } },
       { path: '/login', name: 'Login', component: LoginView },
+      { path: '/join/:token', name: 'JoinTeam', component: { template: '<div />' } },
     ],
   })
   await router.push('/login?from=/join/abc')
@@ -36,6 +38,16 @@ describe('LoginView', () => {
   it('shows no sign-up link without a sign-up page', async () => {
     vi.stubEnv('VITE_SIGNUP_URL', '')
     expect((await mountLogin()).find('[data-testid="signup-link"]').exists()).toBe(false)
+  })
+
+  it('goes on to where the visitor was heading once logged in', async () => {
+    const wrapper = await mountLogin()
+
+    useAuthStore().login('token')
+    await flushPromises()
+
+    const router = wrapper.vm.$router
+    expect(router.currentRoute.value.fullPath).toBe('/join/abc')
   })
 
   it('shows the dev login in local development', async () => {

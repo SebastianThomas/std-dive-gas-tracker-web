@@ -82,7 +82,8 @@ describe('auth store', () => {
     expect(await auth.refreshToken()).toBeNull()
     expect(auth.isLoggedIn).toBe(false)
     expect(localStorage.getItem(DEV_TOKEN_KEY)).toBeNull()
-    expect(auth.sessionVersion).toBe(version + 1)
+    expect(auth.sessionExpired).toBe(true)
+    expect(auth.sessionVersion).toBe(version)
     // nothing stored any more: the next attempt is a normal dive-logger refresh
     expect(await auth.refreshToken()).toBeNull()
     expect(refresh).toHaveBeenCalledTimes(1)

@@ -54,7 +54,7 @@ one primary action per screen, the usual fill recorded with a cylinder size and 
    (task F1; `Intl.NumberFormat`, team currency). Never `parseFloat` money to add it up — sums come from
    the backend.
 5. **All backend calls go through `useApi()`** (`composables/useApi.ts`: bearer token, one
-   refresh-and-retry on 401, session-change guard) via a typed module in `src/lib/api/<area>.ts`
+   renew-and-retry on 401, waiting for a new login if needed, session-change guard) via a typed module in `src/lib/api/<area>.ts`
    (pattern: `lib/api/me.ts`). No hand-rolled `fetch`/`axios` calls in components. Exception:
    the dive-logger auth endpoints in `stores/auth.ts`, `lib/globals/auth/`, `LoginView.vue`.
 6. **Types come from the backend contract.** Until task F1, hand-written types mirror
@@ -106,6 +106,7 @@ components/<area>/  feature components, one folder per tab (fill/, bank/, scrubb
 components/ui/      small primitives: AppButton (also links via `to`), TextField, SelectField,
                     AppCard, LoadState, ConfirmAction (no component library)
 components/layout/  AppHeader, BottomNav, TeamLayout, PageShell
+components/auth/    LoginForm, SessionExpiredDialog
 composables/        useApi + use<Thing> composables with state/lifecycle
 stores/             Pinia: auth, theme; team context arrives with F1
 lib/api/            typed API modules (one per API.md section) + generated schema.d.ts (F1)

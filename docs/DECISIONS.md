@@ -945,3 +945,18 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   dead link.
 - **The sign-up link stays in the same tab and passes `returnTo`** (this login page, with its
   `from`). The dive logger only follows it to origins in its `VITE_SIGNUP_RETURN_ORIGINS`.
+
+## 2026-10-31 — Orchestrator (operations survive the end of a session: the human's request)
+
+- **Bug behind it.** Every token refresh counted as a new login session: `useApi` threw away the
+  retried request's answer (after the server had done the work) and `App` rebuilt the page. A saved
+  payment looked failed and its button came back, inviting a duplicate.
+- **`sessionVersion` now changes only when the person changes** (`uid` in the token) or logs out. A
+  renewal or a new login by the same person keeps the page, its form and its in-flight requests.
+- **Refresh refused with a page open: a full-screen login on top of the page**
+  (`SessionExpiredDialog`), not the login page, because leaving would lose the form. Requests wait
+  and then continue, with their buttons still busy. Another person logging in cancels them unsent.
+  A 401 means nothing happened, so retrying a write can't duplicate it. Other failures are not
+  retried: a lost connection may have reached the server.
+- **Buttons:** all write actions already use `AppButton`'s `loading`/`ConfirmAction`'s `busy`; the
+  rebuilt page was what re-enabled them. No new mechanism.
