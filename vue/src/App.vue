@@ -29,12 +29,15 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-// A session that ends while a page is open (token rejected, refresh refused) goes to the login.
+// A session that ends while a page is open (token rejected, refresh refused) goes to the login. It
+// can end during the first navigation too (the header's first request): wait for the page to exist.
 watch(
   () => auth.isLoggedIn,
-  (loggedIn, wasLoggedIn) => {
-    if (wasLoggedIn && !loggedIn && route.matched.some((r) => r.meta.requiresAuth)) {
-      void router.replace({ name: 'Login', query: { from: route.fullPath } })
+  async (loggedIn, wasLoggedIn) => {
+    if (!wasLoggedIn || loggedIn) return
+    await router.isReady()
+    if (!auth.isLoggedIn && route.matched.some((r) => r.meta.requiresAuth)) {
+      await router.replace({ name: 'Login', query: { from: route.fullPath } })
     }
   },
 )

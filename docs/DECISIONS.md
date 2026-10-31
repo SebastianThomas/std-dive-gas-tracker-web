@@ -912,3 +912,11 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   ends the `localStorage` test failure, so the earlier "use Node 20" note no longer applies.
 - **TypeScript 7 held back:** `vue-tsc` loads `typescript/lib/tsc`, which 7 no longer ships, and
   `typescript-eslint` requires below 6.1. Renovate is limited to `<7` until that changes.
+
+## 2026-10-31 — Orchestrator (invitations by email removed, the human's call)
+
+- Adding by email and PENDING members are gone from the API and database (`V1_0_4`): people are added
+  by username or join by invite link, and a member is always a user. No more binding at sign-in, so
+  the `email_verified` claim only matters to the token decoder. Dev held no pending member when
+  this was done; the migration fails rather than deleting one that has money attached.
+- The cached email (`t_user.email`) stays for now: only the user's own `Me` shows it.

@@ -553,10 +553,9 @@ export type webhooks = Record<string, never>
 export interface components {
   schemas: {
     AddMemberRequest: {
-      email?: string
       /** @enum {string} */
       role: 'ADMIN' | 'MEMBER'
-      username?: string
+      username: string
     }
     Balances: {
       currency: string
@@ -874,7 +873,7 @@ export interface components {
       /** @enum {string} */
       role: 'ADMIN' | 'MEMBER'
       /** @enum {string} */
-      status: 'ACTIVE' | 'PENDING' | 'LEFT'
+      status: 'ACTIVE' | 'LEFT'
       username?: string
     }
     MemberBalance: {
@@ -1218,7 +1217,7 @@ export interface components {
       /** @enum {string} */
       role?: 'ADMIN' | 'MEMBER'
       /** @enum {string} */
-      status?: 'ACTIVE' | 'PENDING' | 'LEFT'
+      status?: 'ACTIVE' | 'LEFT'
     }
     VesselCreate: {
       /** Format: double */

@@ -49,7 +49,7 @@ email, so it never collides with real dive-logger ids).
 ```ts
 type LossPolicy = 'TRUE_UP' | 'POOLED'   // UI labels: "Exact per bank" / "Shared loss pool"
 type Role = 'ADMIN' | 'MEMBER'
-type MemberStatus = 'PENDING' | 'ACTIVE' | 'LEFT'
+type MemberStatus = 'ACTIVE' | 'LEFT'
 type VesselStatus = 'IN_SERVICE' | 'CLOSED'
 type GasClass = 'OXYGEN' | 'HELIUM' | 'AIR' | 'NITROX' | 'TRIMIX'
 type Money = string                       // "123.45"
@@ -83,22 +83,22 @@ interface Team extends TeamSummary { currency: string; defaultLossPolicy: LossPo
 
 | Method | Path | Body → Response |
 |---|---|---|
-| GET | `/v1/teams/{teamId}/members` | → `Member[]` (ACTIVE, then PENDING, then LEFT) |
-| POST | `/v1/teams/{teamId}/members` | ADMIN `{ email, role? }` → `Member` (known user → ACTIVE; unknown email → PENDING, bound on that person's first sign-in with this verified email; LEFT → reactivated; 409 if already ACTIVE or PENDING) |
+| GET | `/v1/teams/{teamId}/members` | → `Member[]` (ACTIVE, then LEFT) |
+| POST | `/v1/teams/{teamId}/members` | ADMIN `{ username, role? }` → `Member` (ACTIVE; unknown username: 400; ACTIVE: 409; LEFT: reactivated) |
 | PUT | `/v1/teams/{teamId}/members/{memberId}` | ADMIN `{ role?, status? }` → `Member` |
 | POST | `/v1/teams/{teamId}/members/me/leave` | → 204 (not the last ADMIN) |
 
 ```ts
-interface Member { memberId: number; email?: string /* invited email while PENDING; missing while the address belongs to another account; shown as displayName only */;
-  displayName: string /* email local part while PENDING */; role: Role; status: MemberStatus;
+interface Member { memberId: number; username?: string;
+  displayName: string; role: Role; status: MemberStatus;
   joinedAt: number; leftAt?: number }
 ```
 
 ### Adding people
 
 `POST …/members` takes `{ username, role? }`: someone who has used the app at least once (unknown:
-400, no pending invitation, or anyone could register a mistyped name and join). `{ email, role? }`
-still works in the API but the app no longer offers it. `Member` carries `username`, no `email`.
+400, no waiting invitation, or anyone could register a mistyped name and join). `Member` carries
+`username`, no `email`.
 `Me` carries the caller's own `username` and `email`.
 
 | Method | Path | Result |

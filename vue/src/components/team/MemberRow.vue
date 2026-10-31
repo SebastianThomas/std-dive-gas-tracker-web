@@ -5,8 +5,7 @@
         {{ member.displayName }}<template v-if="isMe"> (you)</template>
       </span>
       <span class="text-sm text-slate-500 dark:text-slate-400">
-        {{ member.role === 'ADMIN' ? 'Admin' : 'Member'
-        }}<template v-if="member.status === 'PENDING'"> · invited</template>
+        {{ member.role === 'ADMIN' ? 'Admin' : 'Member' }}
       </span>
     </div>
     <span v-if="member.username" class="break-all text-sm text-slate-500 dark:text-slate-400"
