@@ -1,5 +1,5 @@
 # ---------- builder ----------
-FROM node:25-slim AS builder
+FROM node:26-slim AS builder
 WORKDIR /app
 
 # staging (dev deploy) or production: Vite bakes the API URLs of vue/.env.<mode> into the bundle.
