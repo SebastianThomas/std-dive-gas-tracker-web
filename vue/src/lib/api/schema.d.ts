@@ -1554,8 +1554,8 @@ export interface operations {
   list_4: {
     parameters: {
       query?: {
-        memberId?: number
-        vesselId?: number
+        memberId?: number | null
+        vesselId?: number | null
         includeVoided?: boolean
         page?: number
         size?: number
@@ -1608,7 +1608,7 @@ export interface operations {
   preview: {
     parameters: {
       query?: {
-        replacing?: number
+        replacing?: number | null
       }
       header?: never
       path: {
@@ -1943,8 +1943,8 @@ export interface operations {
   consumption: {
     parameters: {
       query?: {
-        from?: number
-        to?: number
+        from?: number | null
+        to?: number | null
       }
       header?: never
       path: {
