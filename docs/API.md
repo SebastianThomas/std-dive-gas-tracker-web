@@ -34,8 +34,8 @@ Tokens are opaque to the frontend.
 Access tokens (task B0) are signed by the dive logger with **Ed25519 (EdDSA)**; the gas backend
 holds only **public** keys, so it can verify but never mint dive-logger tokens. Header `kid`
 selects the key (rotation: configure old and new public key during a switch). Required claims:
-`iss = "std-dive-logger"`, `uid` (dive-logger user id — the gas-tracker identity), `username`, `sub` (email,
-the cached contact address), `exp`, and in production `email_verified: true`. Gas config:
+`iss = "std-dive-logger"`, `uid` (dive-logger user id — the gas-tracker identity), `username`, `sub` (the email, checked for
+shape and then discarded: it is never stored), `exp`, and in production `email_verified: true`. Gas config:
 `ch.sthomas.stddivegastracker.auth.public-keys` (list of PEM Ed25519 public keys),
 `…auth.issuer`, `…auth.require-email-verified-claim`.
 
@@ -70,7 +70,7 @@ interface MemberRef { memberId: number; displayName: string }
 | PUT | `/v1/teams/{teamId}` | ADMIN `TeamInput` → `Team` |
 
 ```ts
-interface Me { userId: number; email: string; displayName: string; teams: TeamSummary[] }
+interface Me { userId: number; username?: string; displayName: string; teams: TeamSummary[] }
 interface TeamSummary { teamId: number; name: string; role: Role; memberId: number }
 interface TeamInput { name: string; currency?: string /* default CHF */;
   defaultLossPolicy: LossPolicy; lineDeadVolumeLitres?: number /* default 0 */;
@@ -98,8 +98,7 @@ interface Member { memberId: number; username?: string;
 
 `POST …/members` takes `{ username, role? }`: someone who has used the app at least once (unknown:
 400, no waiting invitation, or anyone could register a mistyped name and join). `Member` carries
-`username`, no `email`.
-`Me` carries the caller's own `username` and `email`.
+`username`, no `email`, as does `Me`: the email stays with the dive logger.
 
 | Method | Path | Result |
 |---|---|---|

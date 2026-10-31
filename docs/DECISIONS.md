@@ -919,4 +919,13 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   by username or join by invite link, and a member is always a user. No more binding at sign-in, so
   the `email_verified` claim only matters to the token decoder. Dev held no pending member when
   this was done; the migration fails rather than deleting one that has money attached.
-- The cached email (`t_user.email`) stays for now: only the user's own `Me` shows it.
+- **Session end during startup:** the header's first request can fail before the first page has
+  opened, so `App.vue` waits for `router.isReady()` before deciding whether to go to the login.
+
+## 2026-10-31 — Orchestrator (no stored email, the human's call)
+
+- The dive logger owns the email, so the gas tracker no longer stores it (`V1_0_5`), reads it after
+  verifying the token, or returns it. That also removes the handling of two accounts claiming one
+  address. The token's `sub` is still checked for shape by the decoder; the value is discarded.
+- A first request with a token from before usernames gets the display name "Diver", never one
+  derived from the email. Display names already derived from an email are not rewritten.
