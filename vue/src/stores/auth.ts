@@ -1,6 +1,7 @@
 import { devLogin, logoutOnServer, refreshAccessToken } from '@/lib/globals/auth/refreshToken'
 import { isDevLoginEnabled } from '@/lib/globals/constants'
 import { isJwtExpired } from '@/lib/utils/jwt'
+import { forgetInvite } from '@/lib/utils/pendingInvite'
 import { safeLocalStorage } from '@/lib/utils/safeLocalStorage'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
@@ -48,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     const wasDev = usesDevToken.value
     clearSession()
+    forgetInvite()
     if (!wasDev) await logoutOnServer()
   }
 

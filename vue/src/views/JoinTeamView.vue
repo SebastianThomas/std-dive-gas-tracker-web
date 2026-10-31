@@ -16,6 +16,12 @@
         </AppButton>
       </AppCard>
     </LoadState>
+    <RouterLink
+      v-if="!preview?.alreadyMember"
+      :to="{ name: 'Start' }"
+      class="inline-flex min-h-11 items-center justify-center text-slate-600 underline dark:text-slate-400"
+      >Not now</RouterLink
+    >
   </main>
 </template>
 

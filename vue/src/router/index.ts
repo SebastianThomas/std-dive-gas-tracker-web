@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { forgetInvite, pendingInvite, rememberInvite } from '@/lib/utils/pendingInvite'
 import type { TrackedArea } from '@/lib/utils/teams'
 import { useAuthStore } from '@/stores/auth'
 
@@ -166,8 +167,14 @@ router.beforeEach(async (to) => {
   if (!to.matched.some((r) => r.meta.requiresAuth)) return
   const auth = useAuthStore()
   await auth.waitForInitialCheck()
-  if (auth.isLoggedIn) return
-  return { name: 'Login', query: { from: to.fullPath } }
+  if (!auth.isLoggedIn) {
+    if (to.name === 'JoinTeam') rememberInvite(String(to.params.token))
+    return { name: 'Login', query: { from: to.fullPath } }
+  }
+  // Shown once after a login: "Not now" on the join page must not lead back to it.
+  if (to.name === 'JoinTeam') forgetInvite()
+  const invite = to.name === 'Start' ? pendingInvite() : null
+  if (invite !== null) return { name: 'JoinTeam', params: { token: invite } }
 })
 
 router.afterEach((to) => {

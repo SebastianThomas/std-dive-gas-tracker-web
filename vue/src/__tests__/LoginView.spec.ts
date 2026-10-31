@@ -12,7 +12,7 @@ async function mountLogin() {
       { path: '/login', name: 'Login', component: LoginView },
     ],
   })
-  await router.push('/login')
+  await router.push('/login?from=/join/abc')
   return mount(LoginView, { global: { plugins: [createPinia(), router] } })
 }
 
@@ -27,7 +27,10 @@ describe('LoginView', () => {
   it('links to the sign-up page when there is one', async () => {
     vi.stubEnv('VITE_SIGNUP_URL', 'https://logger.example/auth/signup')
     const link = (await mountLogin()).find('[data-testid="signup-link"]')
-    expect(link.attributes('href')).toBe('https://logger.example/auth/signup')
+    const href = new URL(link.attributes('href') ?? '')
+    expect(href.origin + href.pathname).toBe('https://logger.example/auth/signup')
+    expect(href.searchParams.get('returnTo')).toBe(`${location.origin}/login?from=/join/abc`)
+    expect(link.attributes('target')).toBeUndefined()
   })
 
   it('shows no sign-up link without a sign-up page', async () => {

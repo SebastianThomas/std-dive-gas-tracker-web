@@ -33,8 +33,6 @@
       No account yet?
       <a
         :href="signup"
-        target="_blank"
-        rel="noopener"
         data-testid="signup-link"
         class="inline-flex min-h-11 items-center font-medium text-sky-700 underline dark:text-sky-400"
         >Create one</a
@@ -85,7 +83,10 @@ const password = ref('')
 const devEmail = ref('demo-admin@example.test')
 const loggingIn = ref(false)
 const devLoginEnabled = isDevLoginEnabled()
+// Back to this very page afterwards, with the invite it may be on the way to.
 const signup = signupUrl()
+  ? `${signupUrl()}?returnTo=${encodeURIComponent(location.origin + route.fullPath)}`
+  : ''
 
 function redirectAfterLogin() {
   const from = typeof route.query.from === 'string' ? route.query.from : '/'

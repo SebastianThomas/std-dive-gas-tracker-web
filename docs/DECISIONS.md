@@ -934,3 +934,14 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
 - **Icon fonts after `vite-plugin-static-copy` 4:** it keeps the source folders, so the fonts moved and
   nginx answered their URLs with `index.html`. `rename: { stripBase: true }` puts them back. nginx
   now answers a missing font with 404, and the image build fails if the font is not in place.
+
+## 2026-10-31 — Orchestrator (invite survives sign-up: the human's request)
+
+- **Login form stays here, sign-up stays in the dive logger.** Moving login would remove one small
+  form, send people out of the app at every login and still not keep the invite.
+- **The invite waits in `localStorage`** (`lib/utils/pendingInvite.ts`) from the moment it is opened
+  logged out until the next login on this device: `/` leads to it once, the router guard is the only
+  place that uses it. Logout forgets it. The join page gets a "Not now" link, also the way out of a
+  dead link.
+- **The sign-up link stays in the same tab and passes `returnTo`** (this login page, with its
+  `from`). The dive logger only follows it to origins in its `VITE_SIGNUP_RETURN_ORIGINS`.
