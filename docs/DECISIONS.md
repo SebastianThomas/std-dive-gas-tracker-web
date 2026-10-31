@@ -867,3 +867,10 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   an old link to Home, and Money/Home/Team only mention what the team tracks. Exception: "How it
   adds up" still lists non-zero gas or scrubber money from before the switch, or the sum would not
   add up.
+
+## 2026-10-31 — Orchestrator (Renovate for the web repo, the human's request)
+
+- `.github/renovate.json5`, same rhythm as homelab-infra (Monday before 6am, Zurich, 5 open PRs).
+  Auto-merge only dev dependencies and GitHub Actions at minor/patch, and only on green checks;
+  runtime dependencies, majors, Node and `openapi-typescript` wait for a person. The human is
+  assignee and reviewer on every PR, auto-merged ones included, so they show up regularly.

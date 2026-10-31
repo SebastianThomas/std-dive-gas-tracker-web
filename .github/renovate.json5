@@ -1,0 +1,58 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':dependencyDashboard',
+    ':semanticCommitsDisabled',
+  ],
+
+  // Same rhythm as the homelab repos: batch the noise, auto-merge only the safe stuff.
+  timezone: 'Europe/Zurich',
+  schedule: ['before 6am on monday'],
+  prConcurrentLimit: 5,
+  labels: ['dependencies'],
+
+  // Every PR lands in my assigned and review-requested lists, auto-merged ones included.
+  assignees: ['SebastianThomas'],
+  reviewers: ['SebastianThomas'],
+  assignAutomerge: true,
+
+  packageRules: [
+    // Tooling: only needs the PR checks (type-check, lint, tests, build) to stay green.
+    {
+      matchManagers: ['npm'],
+      matchDepTypes: ['devDependencies'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'dev dependencies',
+      automerge: true,
+    },
+    // What ships to the phone: grouped, but a person looks at it. It has no browser test in CI.
+    {
+      matchManagers: ['npm'],
+      matchDepTypes: ['dependencies'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'runtime dependencies',
+    },
+    // Generates src/lib/api/schema.d.ts: a bump can change the committed types, so regenerate
+    // and review them with it (AGENTS.md hard rule 6).
+    {
+      matchPackageNames: ['openapi-typescript'],
+      groupName: 'openapi-typescript',
+      automerge: false,
+    },
+    // GitHub Actions: group, auto-merge minor/patch.
+    {
+      matchManagers: ['github-actions'],
+      matchUpdateTypes: ['minor', 'patch', 'digest'],
+      groupName: 'github-actions',
+      automerge: true,
+    },
+    // Node runs the build image and CI: a new major can break the tests (Node 26 does, see
+    // docs/DECISIONS.md), so it is never auto-merged, and all places move together.
+    {
+      matchPackageNames: ['node'],
+      groupName: 'node',
+      automerge: false,
+    },
+  ],
+}
