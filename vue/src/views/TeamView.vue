@@ -48,8 +48,10 @@
         v-else-if="team.team"
         class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-slate-700 dark:text-slate-300"
       >
-        <dt>Losses (new banks)</dt>
-        <dd class="text-right">{{ lossPolicyLabel(team.team.defaultLossPolicy) }}</dd>
+        <template v-if="team.gasEnabled">
+          <dt>Losses (new banks)</dt>
+          <dd class="text-right">{{ lossPolicyLabel(team.team.defaultLossPolicy) }}</dd>
+        </template>
         <dt>Currency</dt>
         <dd class="text-right">{{ team.team.currency }}</dd>
       </dl>

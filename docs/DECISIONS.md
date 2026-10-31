@@ -855,3 +855,15 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   all seven fit at 320 px. Tabs of an area switched off disappear and the others widen.
 - **Policy comparison** includes scrubber money, so its balances match the real ones.
 - `CylinderSizeChips` became the generic `ui/QuickChips` (cylinder sizes, scoop amounts).
+
+## 2026-10-31 — Orchestrator (team selector, all teams, areas really gone)
+
+- **Team selector in the header** (native select: team names, "All teams" from two teams on, "New
+  team…"). It shows the team in the URL and holds no state of its own. Picking a team opens its
+  Home, not the same tab: that tab may not exist there.
+- **"All teams" overview:** my balance per team, no new endpoint (one balances call per team). No
+  total: teams can use different currencies, and sums belong to the backend (AGENTS rule 3).
+- **A switched-off area is gone, not only hidden:** its routes carry `meta.area`, `TeamLayout` sends
+  an old link to Home, and Money/Home/Team only mention what the team tracks. Exception: "How it
+  adds up" still lists non-zero gas or scrubber money from before the switch, or the sum would not
+  add up.

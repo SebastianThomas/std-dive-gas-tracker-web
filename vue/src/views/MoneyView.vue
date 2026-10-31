@@ -16,8 +16,9 @@
             v-if="mine && Number(mine.provisionalCharges) > 0"
             class="mt-1 text-sm text-amber-700 dark:text-amber-400"
           >
-            Includes {{ money(mine.provisionalCharges) }} estimated: banks and canisters still in
-            use are re-priced when they are finished.
+            Includes {{ money(mine.provisionalCharges) }} estimated:
+            {{ stillInUseWords(team.gasEnabled, team.scrubberEnabled) }} still in use are re-priced
+            when they are finished.
           </p>
           <details v-if="mine" class="mt-2">
             <summary
@@ -28,12 +29,14 @@
             <dl
               class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-slate-700 dark:text-slate-300"
             >
-              <dt>You paid for banks</dt>
-              <dd class="text-right">{{ money(mine.paidCosts) }}</dd>
-              <dt>Your fills</dt>
-              <dd class="text-right">−{{ money(mine.fillCharges) }}</dd>
-              <dt>Your share of losses</dt>
-              <dd class="text-right">−{{ money(mine.lossShares) }}</dd>
+              <template v-if="showGas">
+                <dt>You paid for banks</dt>
+                <dd class="text-right">{{ money(mine.paidCosts) }}</dd>
+                <dt>Your fills</dt>
+                <dd class="text-right">−{{ money(mine.fillCharges) }}</dd>
+                <dt>Your share of losses</dt>
+                <dd class="text-right">−{{ money(mine.lossShares) }}</dd>
+              </template>
               <template v-if="hasScrubber">
                 <dt>You paid for scrubber</dt>
                 <dd class="text-right">{{ money(mine.scrubberPaid) }}</dd>
@@ -105,8 +108,8 @@
               </span>
             </li>
           </ul>
-          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Gas and scrubber still in stock are worth {{ money(data.balances.inventoryValue) }}.
+          <p v-if="stock" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            {{ stock }} {{ money(data.balances.inventoryValue) }}.
           </p>
         </AppCard>
 
@@ -166,6 +169,7 @@ import type { PaymentInput, Suggestion } from '@/lib/api/types'
 import { formatDate } from '@/lib/format/dates'
 import { formatMoney } from '@/lib/format/money'
 import { extractErrorDetail } from '@/lib/utils/apiErrors'
+import { stillInUseWords, stockSentence } from '@/lib/utils/teams'
 import { useTeamStore } from '@/stores/team'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { toast } from 'vue-sonner'
@@ -191,6 +195,15 @@ const money = (amount: string) =>
   formatMoney(amount, data.value?.balances.currency ?? team.currency)
 const mine = computed(() =>
   data.value?.balances.members.find((row) => row.member.memberId === team.myMemberId),
+)
+const stock = computed(() => stockSentence(team.gasEnabled, team.scrubberEnabled))
+const showGas = computed(
+  () =>
+    team.gasEnabled ||
+    (mine.value !== undefined &&
+      [mine.value.paidCosts, mine.value.fillCharges, mine.value.lossShares].some(
+        (amount) => Number(amount) !== 0,
+      )),
 )
 const hasScrubber = computed(
   () =>

@@ -1,10 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { TrackedArea } from '@/lib/utils/teams'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     title?: string
+    /** Exists only for a team tracking this. */
+    area?: TrackedArea
   }
 }
 
@@ -17,6 +20,12 @@ const router = createRouter({
       name: 'Start',
       component: () => import('@/views/StartView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/teams',
+      name: 'TeamsOverview',
+      component: () => import('@/views/TeamsOverviewView.vue'),
+      meta: { requiresAuth: true, title: 'All teams' },
     },
     {
       path: '/teams/new',
@@ -39,19 +48,19 @@ const router = createRouter({
           path: 'fill',
           name: 'FillRecord',
           component: () => import('@/views/FillRecordView.vue'),
-          meta: { title: 'Record a fill' },
+          meta: { area: 'gas', title: 'Record a fill' },
         },
         {
           path: 'fills',
           name: 'FillList',
           component: () => import('@/views/FillListView.vue'),
-          meta: { title: 'Fills' },
+          meta: { area: 'gas', title: 'Fills' },
         },
         {
           path: 'fills/:fillId(\\d+)',
           name: 'FillDetail',
           component: () => import('@/views/FillDetailView.vue'),
-          meta: { title: 'Fill' },
+          meta: { area: 'gas', title: 'Fill' },
         },
         // Mixes are banks holding blended gas: the bank views, in the Blend tab and its words.
         {
@@ -59,57 +68,57 @@ const router = createRouter({
           name: 'MixList',
           component: () => import('@/views/BankListView.vue'),
           props: { mixes: true },
-          meta: { title: 'Blend' },
+          meta: { area: 'gas', title: 'Blend' },
         },
         {
           path: 'blend/new',
           name: 'MixCreate',
           component: () => import('@/views/BankCreateView.vue'),
           props: { mixes: true },
-          meta: { title: 'Add a mix' },
+          meta: { area: 'gas', title: 'Add a mix' },
         },
         {
           path: 'blend/:vesselId(\\d+)',
           name: 'MixDetail',
           component: () => import('@/views/BankDetailView.vue'),
           props: { mixes: true },
-          meta: { title: 'Mix' },
+          meta: { area: 'gas', title: 'Mix' },
         },
         {
           path: 'banks',
           name: 'BankList',
           component: () => import('@/views/BankListView.vue'),
-          meta: { title: 'Banks' },
+          meta: { area: 'gas', title: 'Banks' },
         },
         {
           path: 'banks/new',
           name: 'BankCreate',
           component: () => import('@/views/BankCreateView.vue'),
-          meta: { title: 'Add a bank' },
+          meta: { area: 'gas', title: 'Add a bank' },
         },
         {
           path: 'banks/:vesselId(\\d+)',
           name: 'BankDetail',
           component: () => import('@/views/BankDetailView.vue'),
-          meta: { title: 'Bank' },
+          meta: { area: 'gas', title: 'Bank' },
         },
         {
           path: 'scrubber',
           name: 'ScrubberList',
           component: () => import('@/views/ScrubberListView.vue'),
-          meta: { title: 'Scrubber' },
+          meta: { area: 'scrubber', title: 'Scrubber' },
         },
         {
           path: 'scrubber/new',
           name: 'ScrubberCreate',
           component: () => import('@/views/ScrubberCreateView.vue'),
-          meta: { title: 'Add a canister' },
+          meta: { area: 'scrubber', title: 'Add a canister' },
         },
         {
           path: 'scrubber/:canisterId(\\d+)',
           name: 'ScrubberDetail',
           component: () => import('@/views/ScrubberDetailView.vue'),
-          meta: { title: 'Canister' },
+          meta: { area: 'scrubber', title: 'Canister' },
         },
         {
           path: 'money',
@@ -127,7 +136,7 @@ const router = createRouter({
           path: 'team/reports',
           name: 'Reports',
           component: () => import('@/views/ReportsView.vue'),
-          meta: { title: 'Reports' },
+          meta: { area: 'gas', title: 'Reports' },
         },
       ],
     },

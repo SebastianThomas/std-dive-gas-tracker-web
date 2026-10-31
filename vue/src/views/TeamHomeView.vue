@@ -35,7 +35,8 @@
             v-if="mine && Number(mine.provisionalCharges) > 0"
             class="mt-1 text-sm text-amber-700 dark:text-amber-400"
           >
-            Partly an estimate: banks and canisters still in use are re-priced when finished.
+            Partly an estimate: {{ stillInUseWords(team.gasEnabled, team.scrubberEnabled) }} still
+            in use are re-priced when finished.
           </p>
         </AppCard>
 
@@ -89,6 +90,7 @@ import { useBalancesApi } from '@/lib/api/balances'
 import { useFillsApi } from '@/lib/api/fills'
 import { useVesselsApi } from '@/lib/api/vessels'
 import { LOW_BANK_BAR, isLow } from '@/lib/utils/banks'
+import { stillInUseWords } from '@/lib/utils/teams'
 import { useTeamStore } from '@/stores/team'
 import { computed } from 'vue'
 

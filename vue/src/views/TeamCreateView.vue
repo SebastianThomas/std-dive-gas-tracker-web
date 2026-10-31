@@ -2,13 +2,14 @@
   <main class="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
     <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Create a team</h1>
     <p class="text-slate-600 dark:text-slate-400">
-      A team is the group that shares a blending room and its gas costs.
+      A team is the group that shares a blending room and its costs.
     </p>
     <form class="flex flex-col gap-4" @submit.prevent="submit">
       <AppCard>
         <div class="flex flex-col gap-4">
           <TextField id="team-name" v-model="name" label="Team name" required />
-          <LossPolicyChoice v-model="policy" />
+          <TrackingChoice v-model:gas="gasTracking" v-model:scrubber="scrubberTracking" />
+          <LossPolicyChoice v-if="gasTracking" v-model="policy" />
           <TextField
             id="team-currency"
             v-model="currency"
@@ -24,6 +25,7 @@
 
 <script setup lang="ts">
 import LossPolicyChoice from '@/components/team/LossPolicyChoice.vue'
+import TrackingChoice from '@/components/team/TrackingChoice.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import TextField from '@/components/ui/TextField.vue'
@@ -43,6 +45,8 @@ const session = useSessionStore()
 const name = ref('')
 const policy = ref<LossPolicy>('TRUE_UP')
 const currency = ref('CHF')
+const gasTracking = ref(true)
+const scrubberTracking = ref(true)
 const saving = ref(false)
 
 async function submit() {
@@ -54,6 +58,8 @@ async function submit() {
       defaultLossPolicy: policy.value,
       lineDeadVolumeLitres: 0,
       defaultResidualPressureBar: DEFAULT_RESIDUAL_BAR,
+      gasTrackingEnabled: gasTracking.value,
+      scrubberTrackingEnabled: scrubberTracking.value,
     })
     await session.load()
     await router.replace({ name: 'TeamHome', params: { teamId: team.teamId } })
