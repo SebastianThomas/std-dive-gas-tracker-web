@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { Fill, VesselSummary } from '@/lib/api/types'
 import {
+  CYLINDER_SIZES,
+  MORE_CYLINDER_SIZES,
+  bankDrawFromFill,
   defaultStages,
   draftFromFill,
+  emptyBankDraw,
   emptyDraft,
   fullestBank,
+  toBankDrawInput,
   toFillInput,
 } from '@/lib/fill/fillForm'
 
@@ -167,6 +172,79 @@ describe('edit', () => {
     expect('input' in mapped && mapped.input).toMatchObject({
       target: { type: 'VESSEL', vesselId: 4 },
       endAnalysis: { o2: 0.32, he: 0 },
+    })
+  })
+})
+
+describe('cylinder sizes', () => {
+  const all = [...CYLINDER_SIZES, ...MORE_CYLINDER_SIZES]
+
+  it('turns a cuft rating into the water volume the fill is calculated with', () => {
+    const litresOf = (label: string) => all.find((size) => size.label === label)?.value
+    expect(litresOf('40 cuft')).toBe('5.7')
+    expect(litresOf('80 cuft')).toBe('11.1')
+    expect(litresOf('2×80 cuft')).toBe('22.2')
+  })
+
+  it('gives every size its own volume, so only one chip is ever selected', () => {
+    expect(new Set(all.map((size) => size.value)).size).toBe(all.length)
+  })
+})
+
+describe('bank draw form', () => {
+  const draft = {
+    vesselId: 3,
+    before: '200',
+    after: '150',
+    chargedMemberId: 7,
+    filledAt: '',
+    notes: '',
+  }
+
+  it('sends the bank pressures as one stage, charged to the member', () => {
+    expect(toBankDrawInput(draft)).toEqual({
+      input: {
+        target: { type: 'BANK_DRAW', chargedMemberId: 7 },
+        startPressureBar: 200,
+        stages: [{ source: { type: 'VESSEL', vesselId: 3 }, pressureAfterBar: 150 }],
+      },
+    })
+  })
+
+  it('asks for what is missing', () => {
+    expect(toBankDrawInput({ ...draft, before: '' })).toEqual({
+      problem: 'Enter the bank pressure before.',
+    })
+    expect(toBankDrawInput({ ...draft, after: '' })).toEqual({
+      problem: 'Enter the bank pressure now.',
+    })
+    expect(toBankDrawInput({ ...draft, vesselId: 0 })).toEqual({ problem: 'Add a bank first.' })
+  })
+
+  it('starts from the bank with the most usable gas, at its level', () => {
+    const banks = [
+      { ...bank(1, 'OXYGEN', 100), estimatedPressureBar: 120.4 },
+      { ...bank(2, 'HELIUM', 900), estimatedPressureBar: 95.6 },
+    ]
+    expect(emptyBankDraw(banks, 7)).toMatchObject({ vesselId: 2, before: '96', after: '' })
+  })
+
+  it('round-trips a stored bank draw for editing', () => {
+    const stored = {
+      target: { type: 'BANK_DRAW', chargedMemberId: 7 },
+      startPressureBar: 200,
+      endPressureBar: 150,
+      filledAt: 1_700_000_000_123,
+      stages: [{ source: { type: 'VESSEL', vesselId: 3 } }],
+    } as unknown as Fill
+    const mapped = toBankDrawInput(bankDrawFromFill(stored))
+    expect(mapped).toEqual({
+      input: {
+        target: { type: 'BANK_DRAW', chargedMemberId: 7 },
+        startPressureBar: 200,
+        stages: [{ source: { type: 'VESSEL', vesselId: 3 }, pressureAfterBar: 150 }],
+        filledAt: 1_700_000_000_123,
+      },
     })
   })
 })

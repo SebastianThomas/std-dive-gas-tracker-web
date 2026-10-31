@@ -24,6 +24,17 @@ describe('LoginView', () => {
     expect((await mountLogin()).find('[data-testid="dev-login"]').exists()).toBe(false)
   })
 
+  it('links to the sign-up page when there is one', async () => {
+    vi.stubEnv('VITE_SIGNUP_URL', 'https://logger.example/auth/signup')
+    const link = (await mountLogin()).find('[data-testid="signup-link"]')
+    expect(link.attributes('href')).toBe('https://logger.example/auth/signup')
+  })
+
+  it('shows no sign-up link without a sign-up page', async () => {
+    vi.stubEnv('VITE_SIGNUP_URL', '')
+    expect((await mountLogin()).find('[data-testid="signup-link"]').exists()).toBe(false)
+  })
+
   it('shows the dev login in local development', async () => {
     vi.stubEnv('VITE_DEV_LOGIN', 'true')
     expect((await mountLogin()).find('[data-testid="dev-login"]').exists()).toBe(true)

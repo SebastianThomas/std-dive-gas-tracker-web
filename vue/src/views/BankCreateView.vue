@@ -1,5 +1,8 @@
 <template>
-  <PageShell title="Add a bank" :back="{ name: 'BankList', params: { teamId } }">
+  <PageShell
+    :title="mixes ? 'Add a mix' : 'Add a bank'"
+    :back="{ name: mixes ? 'MixList' : 'BankList', params: { teamId } }"
+  >
     <form class="flex flex-col gap-4" novalidate @submit.prevent="submit">
       <AppCard>
         <div class="flex flex-col gap-4">
@@ -7,10 +10,10 @@
             id="bank-label"
             v-model="label"
             label="Name"
-            placeholder="e.g. O2 bank #3"
+            :placeholder="mixes ? 'e.g. 21/35 for Saturday' : 'e.g. O2 bank #3'"
             required
           />
-          <MixPicker id="bank-mix" v-model="mix" />
+          <MixPicker id="bank-mix" v-model="mix" :only-mix="mixes" />
           <TextField
             id="bank-size"
             v-model="size"
@@ -31,27 +34,8 @@
         </div>
       </AppCard>
 
-      <AppCard title="Cost (optional)">
-        <div class="flex flex-col gap-4">
-          <TextField
-            id="bank-cost"
-            v-model="cost"
-            label="Amount paid"
-            :unit="team.currency"
-            inputmode="decimal"
-            class="max-w-56"
-          />
-          <SelectField v-if="team.isAdmin" id="bank-payer" v-model="payerId" label="Paid by">
-            <option
-              v-for="member in team.selectableMembers"
-              :key="member.memberId"
-              :value="member.memberId"
-            >
-              {{ member.displayName }}
-            </option>
-          </SelectField>
-          <p v-else class="text-sm text-slate-500 dark:text-slate-400">Paid by you.</p>
-        </div>
+      <AppCard v-if="!mixes" title="Cost (optional)">
+        <CostPayers v-model="payments" />
       </AppCard>
 
       <details class="rounded-2xl bg-white shadow-sm dark:bg-slate-900">
@@ -83,41 +67,49 @@
         </div>
       </details>
 
-      <AppButton type="submit" :loading="saving">Add bank</AppButton>
+      <AppButton type="submit" :loading="saving">{{ mixes ? 'Add mix' : 'Add bank' }}</AppButton>
     </form>
   </PageShell>
 </template>
 
 <script setup lang="ts">
+import CostPayers from '@/components/bank/CostPayers.vue'
 import MixPicker from '@/components/bank/MixPicker.vue'
 import PageShell from '@/components/layout/PageShell.vue'
 import LossPolicyChoice from '@/components/team/LossPolicyChoice.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
-import SelectField from '@/components/ui/SelectField.vue'
 import TextField from '@/components/ui/TextField.vue'
 import { useTeamRoute } from '@/composables/useTeamRoute'
 import type { LossPolicy, VesselCreate } from '@/lib/api/types'
 import { useVesselsApi } from '@/lib/api/vessels'
 import { fromLocalInput } from '@/lib/format/dates'
-import { parseDecimal, parseMoney } from '@/lib/format/number'
+import { parseDecimal } from '@/lib/format/number'
 import { extractErrorDetail } from '@/lib/utils/apiErrors'
-import { mixOfChoice, type MixChoice } from '@/lib/utils/banks'
+import {
+  bankDetailRoute,
+  costLinesOf,
+  mixOfChoice,
+  newCostRow,
+  type CostRow,
+  type MixChoice,
+} from '@/lib/utils/banks'
 import { useTeamStore } from '@/stores/team'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-// F4: a new bank with what it holds now and what it cost; the rest defaults from the team.
+// F4: a new bank with what it holds now and what it cost; the rest defaults from the team. A mix
+// starts empty and gets its gas (and its price) from the fills into it, so it asks for no cost.
+const props = defineProps<{ mixes?: boolean }>()
 const router = useRouter()
 const team = useTeamStore()
 const { teamId } = useTeamRoute()
 const label = ref('')
-const mix = ref<MixChoice>({ kind: 'OXYGEN', o2: '', he: '' })
+const mix = ref<MixChoice>({ kind: props.mixes ? 'OTHER' : 'OXYGEN', o2: '', he: '' })
 const size = ref('50')
 const pressure = ref('')
-const cost = ref('')
-const payerId = ref(team.myMemberId ?? 0)
+const payments = ref<CostRow[]>([newCostRow(team.myMemberId ?? 0)])
 const residual = ref(String(team.team?.defaultResidualPressureBar ?? ''))
 const policy = ref<LossPolicy>(team.team?.defaultLossPolicy ?? 'TRUE_UP')
 const openedAt = ref('')
@@ -133,9 +125,9 @@ function request(): VesselCreate | string {
   const initialPressureBar = pressure.value.trim() === '' ? 0 : parseDecimal(pressure.value)
   if (initialPressureBar === null) return 'Enter the pressure in bar.'
   const expectedResidualPressureBar = parseDecimal(residual.value)
-  const amount = cost.value.trim() === '' ? null : parseMoney(cost.value)
-  if (cost.value.trim() !== '' && amount === null) return 'Enter the amount like 120.50.'
   const opened = openedAt.value ? fromLocalInput(openedAt.value) : undefined
+  const initialCostLines = costLinesOf(props.mixes ? [] : payments.value, opened)
+  if (typeof initialCostLines === 'string') return initialCostLines
   return {
     label: label.value.trim(),
     mix: gas,
@@ -145,15 +137,7 @@ function request(): VesselCreate | string {
     ...(expectedResidualPressureBar !== null ? { expectedResidualPressureBar } : {}),
     ...(opened !== undefined ? { openedAt: opened } : {}),
     ...(notes.value.trim() ? { notes: notes.value.trim() } : {}),
-    ...(amount !== null
-      ? {
-          initialCostLine: {
-            amount,
-            payerMemberId: team.isAdmin ? payerId.value : (team.myMemberId ?? 0),
-            ...(opened !== undefined ? { paidAt: opened } : {}),
-          },
-        }
-      : {}),
+    initialCostLines,
   }
 }
 
@@ -167,7 +151,7 @@ async function submit() {
   try {
     const bank = await useVesselsApi().create(teamId.value, body)
     await router.replace({
-      name: 'BankDetail',
+      name: bankDetailRoute(bank),
       params: { teamId: teamId.value, vesselId: bank.vesselId },
     })
   } catch (err) {

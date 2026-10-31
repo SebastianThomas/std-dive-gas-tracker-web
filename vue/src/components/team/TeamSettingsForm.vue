@@ -1,11 +1,29 @@
 <template>
   <form class="flex flex-col gap-4" novalidate @submit.prevent="submit">
     <TextField id="settings-name" v-model="name" label="Team name" />
-    <LossPolicyChoice v-model="policy" />
-    <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400">
+    <fieldset class="flex flex-col">
+      <legend class="mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+        What this team tracks
+      </legend>
+      <label class="flex min-h-11 items-center gap-3 text-slate-800 dark:text-slate-200">
+        <input v-model="gasTracking" type="checkbox" class="size-5 accent-sky-600" />
+        Gas fills and banks
+      </label>
+      <label class="flex min-h-11 items-center gap-3 text-slate-800 dark:text-slate-200">
+        <input v-model="scrubberTracking" type="checkbox" class="size-5 accent-sky-600" />
+        Scrubber
+      </label>
+      <p class="text-sm text-slate-500 dark:text-slate-400">
+        Switching one off hides it and stops new records; what it already charged stays in the
+        balances.
+      </p>
+    </fieldset>
+    <LossPolicyChoice v-if="gasTracking" v-model="policy" />
+    <p v-if="gasTracking" class="-mt-2 text-sm text-slate-500 dark:text-slate-400">
       Applies to banks added from now on; each bank keeps its own setting.
     </p>
     <TextField
+      v-if="gasTracking"
       id="settings-residual"
       v-model="residual"
       label="Usual pressure left in a bank when it goes back"
@@ -15,6 +33,7 @@
       class="max-w-56"
     />
     <TextField
+      v-if="gasTracking"
       id="settings-dead-volume"
       v-model="deadVolume"
       label="Filling line volume"
@@ -50,6 +69,8 @@ const policy = ref<LossPolicy>(props.team.defaultLossPolicy)
 const residual = ref(String(props.team.defaultResidualPressureBar))
 const deadVolume = ref(String(props.team.lineDeadVolumeLitres))
 const currency = ref(props.team.currency)
+const gasTracking = ref(props.team.gasTrackingEnabled)
+const scrubberTracking = ref(props.team.scrubberTrackingEnabled)
 const saving = ref(false)
 
 async function submit() {
@@ -67,6 +88,8 @@ async function submit() {
       defaultLossPolicy: policy.value,
       defaultResidualPressureBar,
       lineDeadVolumeLitres,
+      gasTrackingEnabled: gasTracking.value,
+      scrubberTrackingEnabled: scrubberTracking.value,
     })
     await Promise.all([teamStore.load(props.team.teamId), session.load()])
     toast.success('Settings saved.')

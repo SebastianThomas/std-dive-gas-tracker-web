@@ -1,6 +1,6 @@
 <template>
   <RouterLink
-    :to="{ name: 'BankDetail', params: { teamId, vesselId: bank.vesselId } }"
+    :to="{ name: bankDetailRoute(bank), params: { teamId, vesselId: bank.vesselId } }"
     class="flex min-h-14 flex-col gap-1.5 rounded-xl px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800"
   >
     <span class="flex items-baseline justify-between gap-2">
@@ -42,7 +42,7 @@ import { formatDate } from '@/lib/format/dates'
 import { mixLabel } from '@/lib/format/mix'
 import { formatUnitPrice } from '@/lib/format/money'
 import { formatBar, formatLitres } from '@/lib/format/units'
-import { isLow } from '@/lib/utils/banks'
+import { bankDetailRoute, isLow } from '@/lib/utils/banks'
 import { computed } from 'vue'
 
 // One bank in a list: name, mix, pressure with level bar, usable gas, price per litre.

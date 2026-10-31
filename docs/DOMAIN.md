@@ -37,10 +37,11 @@ the blend planner (§9), analysis-only fill entry (§5.3), several rooms per tea
 | Term | Meaning |
 |---|---|
 | **User** | A person, identified by their **dive-logger user id** (JWT claim `uid`) — the same id in both systems, so changing the email in the dive logger keeps every membership and all money. The gas tracker keeps a small local copy (`t_user`: id = dive-logger id, `email`, `displayName`), created on the first authenticated request and refreshed on every request: a changed email is updated; another local user still holding that email (stale) loses it. `displayName` is gas-tracker-local (tokens carry no name). |
-| **Team** | The tenant and accounting unit ("our group is a team"; one team = one shared blending room). Owns vessels, fills, payments and settings: `name`, `currency` (ISO 4217, default `CHF`), `defaultLossPolicy` (§7), `lineDeadVolumeLitres` (≥ 0, default 0 = feature off, §5.5), `defaultResidualPressureBar` (≥ 0, default 0; UI hint: ≈ highest fill pressure ÷ booster max ratio). A user can be in several teams. |
+| **Team** | The tenant and accounting unit ("our group is a team"; one team = one shared blending room). Owns vessels, fills, payments and settings: `name`, `currency` (ISO 4217, default `CHF`), `defaultLossPolicy` (§7), `lineDeadVolumeLitres` (≥ 0, default 0 = feature off, §5.5), `defaultResidualPressureBar` (≥ 0, default 0; UI hint: ≈ highest fill pressure ÷ booster max ratio), `gasTrackingEnabled` and `scrubberTrackingEnabled` (each default on, independent: off hides that area and refuses new bank, fill or canister/use records; what exists stays readable, correctable and in the balances). A user can be in several teams. |
 | **Member** | A membership in one team: `role` (`ADMIN` \| `MEMBER`), `status` (`PENDING` \| `ACTIVE` \| `LEFT`), `joinedAt`, `leftAt`. An admin adds a member by email: a known user (has signed in once) is ACTIVE at once; an unknown email becomes **PENDING** (invited email, no user yet) and turns ACTIVE automatically the first time a user with that **verified** email signs in — no accept/decline step. PENDING members can already be charged for fills and share pooled losses (real divers who haven't opened the app yet). **All money references a member, never a user.** |
 | **Vessel** | A storage container (bank, bundle, large cylinder) — bought pre-filled, or blended in-house by fills into it. `label`, `waterVolumeLitres`, declared `mix` (§3), `initialPressureBar` (pressure when registered; default 0), `status` (`IN_SERVICE` \| `CLOSED`), `openedAt`, `closedAt`, `closingPressureBar`, `lossPolicy` (§7, snapshot), `expectedResidualPressureBar`, `notes`. |
 | **Cost line** | Money paid for a vessel: `vessel`, `payer` (member), `amount`, `paidAt`, `note` (e.g. "purchase", "rental Q3"). The payer is credited (§8). A vessel can have any number of cost lines, added any time (a rental invoice after closing re-prices that vessel's draws). |
+| **Mix** | UI word for a vessel holding blended gas (gas class NITROX or TRIMIX), listed under the Blend tab: usually temporary, closed when used up. Not a separate entity. |
 | **Fill** | One gas-filling operation into one **target**: a diver's cylinder (`targetType = CYLINDER`, `chargedMember` required) or another vessel (`targetType = VESSEL`, e.g. blending a house-mix bank; no charged member). Has `filledAt`, `recordedBy`, start state, ordered **stages**, optional end analysis, `notes`, `status` (`ACTIVE` \| `VOIDED` + `voidReason`). |
 | **Stage** | One source feeding the target within a fill, in order: `source` = a vessel or `AIR` (compressor, free). Stores the computed volumes (§5.4). |
 | **Draw** | Gas that left a vessel: one stage whose source is a vessel. `drawLitres = addedLitres + lineLossLitres`. The unit of cost allocation. |
@@ -202,6 +203,23 @@ It is part of that stage's draw, so the fill that vented it pays for it. With
 - `VOIDED` fills are excluded from every computation; voiding needs a reason; voided fills stay
   visible in lists (struck through). Hard delete does not exist.
 
+### §5.7 Bank draw: a fill known only from the bank's gauge
+
+For gas taken without measuring a cylinder: target `BANK_DRAW` (`chargedMemberId`, no water volume),
+one stage from one vessel (not AIR). Here `startPressureBar` and the stage's `pressureAfterBar` are
+the **bank's** gauge before and after, with after < before (400 otherwise):
+
+```
+drawLitres = contentLitres(Vw_bank, before, m) − contentLitres(Vw_bank, after, m)
+```
+
+with `m` the source mix snapshot (§5.1), which is also `startMix` and `endMix`. `addedLitres =
+drawLitres`, `lineLossLitres = 0` (whatever the line vented is already in the drop),
+`sourcePressureAfterBar = after` and becomes a Reading, so the bank's estimate equals the gauge
+(the "before" gauge is not a reading: a difference from the estimate stays visible as that
+reading's discrepancy). No `endAnalysis`. Pricing, charging, voiding, editing and §5.6 are as for
+a cylinder fill.
+
 ---
 
 ## §6 Vessels and inventory
@@ -337,6 +355,8 @@ can choose its default with real data (the team hasn't decided yet; both must st
 balance(member) =   Σ cost lines paid by member
                   − Σ fill charges of fills charged to member
                   − Σ loss shares of member
+                  + Σ scrubber cost lines paid by member      (§12)
+                  − Σ scrubber charges of member              (§12)
                   + Σ payments sent by member
                   − Σ payments received by member
 ```
@@ -465,3 +485,31 @@ Engine-level inputs (litres given directly). O2 vessel O: `C_direct = 300.00` (B
   rate_X = 75 / max(6000, 3000) = 0.0125 → C 37.50.
 - O closed (D_O = 6000): rate_O = 0.05 → X's cost = 100.00, A 200.00; rate_X = 100/6000 →
   C 50.00. Conservation: 300 = 200 + 50 + unallocated(X) 50 ✓.
+
+---
+
+## §12 Scrubber: shared CO2 absorbent
+
+Separate from gas: no bank, fill, mix, loss policy or physics is involved, only the balances (§8)
+are shared.
+
+A **canister** has a `label`, a `capacityKg` (usually 23), cost lines (one or several payers, same
+rule as a bank's, §10), `openedAt` and, once someone says "it is empty now", `emptiedAt`. A **use**
+is one scoop for a member: `kg` (usually 2–3, an estimate, nobody weighs it) and `usedAt`, inside
+`[openedAt, emptiedAt)`.
+
+With `C` the canister's total cost and `R` the recorded kg:
+
+```
+open:   pricePerKg = C / max(capacityKg, R)    an estimate; can never charge more than C
+empty:  pricePerKg = C / R                     final; the charges add up to exactly C
+charge(use) = kg · pricePerKg
+```
+
+An empty canister nobody recorded a use of charges nobody: its cost stays with its payers. What is
+paid but not yet charged counts as stock (`inventoryValue`, §8). Remaining kg is `capacityKg − R`
+(at least 0), and 0 once empty: an estimate shown as "≈".
+
+Authorization: any member records a use (for anyone, like a fill), adds a canister and says it is
+empty; a use is deleted by its member, its recorder or an admin; cost lines for someone else and
+their deletion need an admin; reopening an empty canister needs an admin.

@@ -1,3 +1,4 @@
+import type { QuickChip } from '@/components/ui/QuickChips.vue'
 import type { Fill, FillInput, GasClass, Mix, StageSource, VesselSummary } from '@/lib/api/types'
 import { fromLocalInput, toLocalInput } from '@/lib/format/dates'
 import { parseDecimal } from '@/lib/format/number'
@@ -36,13 +37,36 @@ export interface FillDraft {
 export type Mapped = { input: FillInput } | { problem: string }
 
 /** Cylinder quick picks: label → water volume in litres. */
-export const CYLINDER_SIZES: readonly { label: string; litres: string }[] = [
-  { label: '7 L', litres: '7' },
-  { label: '10 L', litres: '10' },
-  { label: '12 L', litres: '12' },
-  { label: '15 L', litres: '15' },
-  { label: '2×7 L', litres: '14' },
-  { label: '2×12 L', litres: '24' },
+export const CYLINDER_SIZES: readonly QuickChip[] = [
+  { label: '2 L', value: '2' },
+  { label: '3 L', value: '3' },
+  { label: '7 L', value: '7' },
+  { label: '10 L', value: '10' },
+  { label: '12 L', value: '12' },
+  { label: '15 L', value: '15' },
+  { label: '2×7 L', value: '14' },
+  { label: '2×12 L', value: '24' },
+  { label: '40 cuft', value: '5.7' },
+  { label: '80 cuft', value: '11.1' },
+]
+
+/**
+ * Less usual sizes, behind "More sizes". A cuft rating is the gas a cylinder holds when full, not
+ * its size, so each maps to a water volume: Luxfer aluminium up to 80, Faber high-pressure steel
+ * for 100 and 120.
+ */
+export const MORE_CYLINDER_SIZES: readonly QuickChip[] = [
+  { label: '5 L', value: '5' },
+  { label: '8.5 L', value: '8.5' },
+  { label: '18 L', value: '18' },
+  { label: '2×10 L', value: '20' },
+  { label: '13 cuft', value: '1.9' },
+  { label: '19 cuft', value: '2.9' },
+  { label: '30 cuft', value: '4.3' },
+  { label: '63 cuft', value: '9' },
+  { label: '100 cuft', value: '12.9' },
+  { label: '120 cuft', value: '15.3' },
+  { label: '2×80 cuft', value: '22.2' },
 ]
 
 /** The gases offered as "+ …" buttons, in the usual blending order. */
@@ -193,6 +217,77 @@ export function toFillInput(draft: FillDraft): Mapped {
       stages,
       ...(startMix ? { startMix } : {}),
       ...(endAnalysis ? { endAnalysis } : {}),
+      ...(filledAt !== undefined ? { filledAt } : {}),
+      ...(notes ? { notes } : {}),
+    },
+  }
+}
+
+/** A fill known only from the bank's gauge (DOMAIN §5.7), as typed in the form. */
+export interface BankDrawDraft {
+  vesselId: number
+  before: string
+  after: string
+  chargedMemberId: number
+  filledAt: string
+  filledAtOriginal?: number
+  notes: string
+}
+
+/** A bank's estimated level as a starting value for a gauge field. */
+export function gaugeOf(bank: VesselSummary): string {
+  return String(Math.round(bank.estimatedPressureBar))
+}
+
+/** Starts from the bank with the most usable gas, at its estimated level. */
+export function emptyBankDraw(banks: VesselSummary[], memberId: number): BankDrawDraft {
+  const bank = banks
+    .filter((candidate) => candidate.status === 'IN_SERVICE')
+    .toSorted((a, b) => b.usableContentLitres - a.usableContentLitres)[0]
+  return {
+    vesselId: bank?.vesselId ?? 0,
+    before: bank ? gaugeOf(bank) : '',
+    after: '',
+    chargedMemberId: memberId,
+    filledAt: '',
+    notes: '',
+  }
+}
+
+/** A stored bank draw back into the form (edit). */
+export function bankDrawFromFill(fill: Fill): BankDrawDraft {
+  const stage = fill.stages[0]
+  return {
+    vesselId: stage?.source.type === 'VESSEL' ? stage.source.vesselId : 0,
+    before: String(fill.startPressureBar),
+    after: String(fill.endPressureBar),
+    chargedMemberId: fill.target.type === 'BANK_DRAW' ? fill.target.chargedMemberId : 0,
+    filledAt: toLocalInput(fill.filledAt),
+    filledAtOriginal: fill.filledAt,
+    notes: fill.notes ?? '',
+  }
+}
+
+/** Form → API request: the pressures are the bank's, so the one stage's "after" is its gauge. */
+export function toBankDrawInput(draft: BankDrawDraft): Mapped {
+  if (draft.vesselId === 0) return { problem: 'Add a bank first.' }
+  const startPressureBar = parseDecimal(draft.before)
+  if (startPressureBar === null) return { problem: 'Enter the bank pressure before.' }
+  const pressureAfterBar = parseDecimal(draft.after)
+  if (pressureAfterBar === null) return { problem: 'Enter the bank pressure now.' }
+  const unchanged =
+    draft.filledAtOriginal !== undefined && draft.filledAt === toLocalInput(draft.filledAtOriginal)
+  const filledAt = unchanged
+    ? draft.filledAtOriginal
+    : draft.filledAt
+      ? fromLocalInput(draft.filledAt)
+      : undefined
+  const notes = draft.notes.trim()
+  return {
+    input: {
+      target: { type: 'BANK_DRAW', chargedMemberId: draft.chargedMemberId },
+      startPressureBar,
+      stages: [{ source: { type: 'VESSEL', vesselId: draft.vesselId }, pressureAfterBar }],
       ...(filledAt !== undefined ? { filledAt } : {}),
       ...(notes ? { notes } : {}),
     },

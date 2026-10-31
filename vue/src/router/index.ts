@@ -53,6 +53,28 @@ const router = createRouter({
           component: () => import('@/views/FillDetailView.vue'),
           meta: { title: 'Fill' },
         },
+        // Mixes are banks holding blended gas: the bank views, in the Blend tab and its words.
+        {
+          path: 'blend',
+          name: 'MixList',
+          component: () => import('@/views/BankListView.vue'),
+          props: { mixes: true },
+          meta: { title: 'Blend' },
+        },
+        {
+          path: 'blend/new',
+          name: 'MixCreate',
+          component: () => import('@/views/BankCreateView.vue'),
+          props: { mixes: true },
+          meta: { title: 'Add a mix' },
+        },
+        {
+          path: 'blend/:vesselId(\\d+)',
+          name: 'MixDetail',
+          component: () => import('@/views/BankDetailView.vue'),
+          props: { mixes: true },
+          meta: { title: 'Mix' },
+        },
         {
           path: 'banks',
           name: 'BankList',
@@ -70,6 +92,24 @@ const router = createRouter({
           name: 'BankDetail',
           component: () => import('@/views/BankDetailView.vue'),
           meta: { title: 'Bank' },
+        },
+        {
+          path: 'scrubber',
+          name: 'ScrubberList',
+          component: () => import('@/views/ScrubberListView.vue'),
+          meta: { title: 'Scrubber' },
+        },
+        {
+          path: 'scrubber/new',
+          name: 'ScrubberCreate',
+          component: () => import('@/views/ScrubberCreateView.vue'),
+          meta: { title: 'Add a canister' },
+        },
+        {
+          path: 'scrubber/:canisterId(\\d+)',
+          name: 'ScrubberDetail',
+          component: () => import('@/views/ScrubberDetailView.vue'),
+          meta: { title: 'Canister' },
         },
         {
           path: 'money',

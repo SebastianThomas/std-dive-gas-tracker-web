@@ -29,6 +29,18 @@
       <AppButton type="submit" :loading="loggingIn">Log in</AppButton>
     </form>
 
+    <p v-if="signup" class="text-center text-slate-600 dark:text-slate-400">
+      No account yet?
+      <a
+        :href="signup"
+        target="_blank"
+        rel="noopener"
+        data-testid="signup-link"
+        class="inline-flex min-h-11 items-center font-medium text-sky-700 underline dark:text-sky-400"
+        >Create one</a
+      >
+    </p>
+
     <form
       v-if="devLoginEnabled"
       data-testid="dev-login"
@@ -55,7 +67,7 @@
 <script setup lang="ts">
 import AppButton from '@/components/ui/AppButton.vue'
 import TextField from '@/components/ui/TextField.vue'
-import { isDevLoginEnabled } from '@/lib/globals/constants'
+import { isDevLoginEnabled, signupUrl } from '@/lib/globals/constants'
 import { resolveAuthUrl } from '@/lib/globals/url/resolveUrl'
 import { extractErrorDetail } from '@/lib/utils/apiErrors'
 import { useAuthStore } from '@/stores/auth'
@@ -73,6 +85,7 @@ const password = ref('')
 const devEmail = ref('demo-admin@example.test')
 const loggingIn = ref(false)
 const devLoginEnabled = isDevLoginEnabled()
+const signup = signupUrl()
 
 function redirectAfterLogin() {
   const from = typeof route.query.from === 'string' ? route.query.from : '/'

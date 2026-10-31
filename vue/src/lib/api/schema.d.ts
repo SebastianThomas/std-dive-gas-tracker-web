@@ -75,9 +75,9 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get: operations['list_3']
+    get: operations['list_4']
     put?: never
-    post: operations['create_2']
+    post: operations['create_3']
     delete?: never
     options?: never
     head?: never
@@ -139,7 +139,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get: operations['list_2']
+    get: operations['list_3']
     put?: never
     post: operations['add']
     delete?: never
@@ -187,7 +187,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get: operations['list_1']
+    get: operations['list_2']
     put?: never
     post: operations['record']
     delete?: never
@@ -255,6 +255,134 @@ export interface paths {
     put?: never
     post?: never
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['list_1']
+    put?: never
+    post: operations['create_2']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['get_3']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}/cost-lines': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['addCostLine_1']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}/cost-lines/{costLineId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete: operations['deleteCostLine_1']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}/empty': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['markEmpty']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}/reopen': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['reopen_1']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}/uses': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['addUse']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/scrubbers/{canisterId}/uses/{useId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete: operations['deleteUse']
     options?: never
     head?: never
     patch?: never
@@ -390,6 +518,17 @@ export interface components {
       inventoryValue: string
       members: components['schemas']['MemberBalance'][]
       suggestions: components['schemas']['Suggestion'][]
+    }
+    CanisterCreate: {
+      /** Format: double */
+      capacityKg?: number
+      initialCostLines: components['schemas']['CostLineInput'][]
+      label: string
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      openedAt?: number
     }
     CloseVesselRequest: {
       /**
@@ -551,7 +690,27 @@ export interface components {
     }
     FillTarget: {
       type: string
-    } & (components['schemas']['FillTargetCylinder'] | components['schemas']['FillTargetVessel'])
+    } & (
+      | components['schemas']['FillTargetCylinder']
+      | components['schemas']['FillTargetVessel']
+      | components['schemas']['FillTargetBankDraw']
+    )
+    FillTargetBankDraw: Omit<components['schemas']['FillTarget'], 'type'> & {
+      /** Format: int64 */
+      chargedMemberId: number
+    } & {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'BANK_DRAW'
+    } & {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'BANK_DRAW'
+    }
     FillTargetCylinder: Omit<components['schemas']['FillTarget'], 'type'> & {
       /** Format: int64 */
       chargedMemberId: number
@@ -625,6 +784,13 @@ export interface components {
       report: components['schemas']['LossReport']
       vessel: components['schemas']['VesselSummary']
     }
+    MarkEmptyRequest: {
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      emptiedAt?: number
+    }
     MeResponse: {
       displayName: string
       email: string
@@ -689,6 +855,16 @@ export interface components {
        * @description Money, e.g. "12.30"
        */
       provisionalCharges: string
+      /**
+       * Format: decimal
+       * @description Money, e.g. "12.30"
+       */
+      scrubberCharges: string
+      /**
+       * Format: decimal
+       * @description Money, e.g. "12.30"
+       */
+      scrubberPaid: string
     }
     MemberRef: {
       displayName: string
@@ -787,6 +963,88 @@ export interface components {
       /** Format: double */
       pressureBar: number
     }
+    ScrubberCanister: {
+      /** Format: int64 */
+      canisterId: number
+      /** Format: double */
+      capacityKg: number
+      costLines: components['schemas']['ScrubberCostLine'][]
+      createdBy: components['schemas']['MemberRef']
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      emptiedAt?: number
+      isEstimate: boolean
+      label: string
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      openedAt: number
+      /**
+       * Format: decimal
+       * @description Money, e.g. "12.30"
+       */
+      pricePerKg: string
+      /** Format: double */
+      recordedKg: number
+      /** Format: double */
+      remainingKg: number
+      /** @enum {string} */
+      status: 'OPEN' | 'EMPTY'
+      /**
+       * Format: decimal
+       * @description Money, e.g. "12.30"
+       */
+      totalCost: string
+      uses: components['schemas']['ScrubberUse'][]
+    }
+    ScrubberCostLine: {
+      /**
+       * Format: decimal
+       * @description Money, e.g. "12.30"
+       */
+      amount: string
+      /** Format: int64 */
+      costLineId: number
+      note?: string
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      paidAt: number
+      payer: components['schemas']['MemberRef']
+    }
+    ScrubberUse: {
+      /**
+       * Format: decimal
+       * @description Money, e.g. "12.30"
+       */
+      charge: string
+      /** Format: double */
+      kg: number
+      member: components['schemas']['MemberRef']
+      recordedBy: components['schemas']['MemberRef']
+      /** Format: int64 */
+      useId: number
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      usedAt: number
+    }
+    ScrubberUseInput: {
+      /** Format: double */
+      kg: number
+      /** Format: int64 */
+      memberId: number
+      /**
+       * Format: int64
+       * @description Epoch milliseconds
+       */
+      usedAt?: number
+    }
     StageResult: {
       /** Format: double */
       addedHeLitres: number
@@ -861,6 +1119,7 @@ export interface components {
       defaultLossPolicy: 'TRUE_UP' | 'POOLED'
       /** Format: double */
       defaultResidualPressureBar: number
+      gasTrackingEnabled: boolean
       /** Format: double */
       lineDeadVolumeLitres: number
       /** Format: int64 */
@@ -868,6 +1127,7 @@ export interface components {
       name: string
       /** @enum {string} */
       role: 'ADMIN' | 'MEMBER'
+      scrubberTrackingEnabled: boolean
       /** Format: int64 */
       teamId: number
     }
@@ -877,9 +1137,11 @@ export interface components {
       defaultLossPolicy: 'TRUE_UP' | 'POOLED'
       /** Format: double */
       defaultResidualPressureBar: number
+      gasTrackingEnabled?: boolean
       /** Format: double */
       lineDeadVolumeLitres: number
       name: string
+      scrubberTrackingEnabled?: boolean
     }
     TeamSummary: {
       /** Format: int64 */
@@ -902,7 +1164,7 @@ export interface components {
     VesselCreate: {
       /** Format: double */
       expectedResidualPressureBar?: number
-      initialCostLine?: components['schemas']['CostLineInput']
+      initialCostLines: components['schemas']['CostLineInput'][]
       /** Format: double */
       initialPressureBar?: number
       label: string
@@ -1188,7 +1450,7 @@ export interface operations {
       }
     }
   }
-  list_3: {
+  list_4: {
     parameters: {
       query?: {
         memberId?: number
@@ -1216,7 +1478,7 @@ export interface operations {
       }
     }
   }
-  create_2: {
+  create_3: {
     parameters: {
       query?: never
       header?: never
@@ -1347,7 +1609,7 @@ export interface operations {
       }
     }
   }
-  list_2: {
+  list_3: {
     parameters: {
       query?: never
       header?: never
@@ -1442,7 +1704,7 @@ export interface operations {
       }
     }
   }
-  list_1: {
+  list_2: {
     parameters: {
       query?: never
       header?: never
@@ -1576,6 +1838,229 @@ export interface operations {
         }
         content: {
           '*/*': components['schemas']['PolicyComparison']
+        }
+      }
+    }
+  }
+  list_1: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister'][]
+        }
+      }
+    }
+  }
+  create_2: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CanisterCreate']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  get_3: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  addCostLine_1: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CostLineInput']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  deleteCostLine_1: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+        costLineId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  markEmpty: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['MarkEmptyRequest']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  reopen_1: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  addUse: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ScrubberUseInput']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
+        }
+      }
+    }
+  }
+  deleteUse: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+        canisterId: number
+        useId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ScrubberCanister']
         }
       }
     }

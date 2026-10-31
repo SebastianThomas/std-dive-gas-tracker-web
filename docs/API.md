@@ -116,7 +116,7 @@ interface VesselCreate { label: string; waterVolumeLitres: number; mix: Mix;
   initialPressureBar?: number /* default 0 */; expectedResidualPressureBar?: number
   /* default team.defaultResidualPressureBar */; lossPolicy?: LossPolicy
   /* default team.defaultLossPolicy */; openedAt?: number; notes?: string;
-  initialCostLine?: CostLineInput }
+  initialCostLines?: CostLineInput[] /* one per person who paid; default none */ }
 interface VesselUpdate { label?: string; notes?: string; expectedResidualPressureBar?: number;
   mix?: Mix /* ADMIN */; lossPolicy?: LossPolicy /* ADMIN, IN_SERVICE only */ }
 interface VesselSummary { vesselId: number; label: string; gasClass: GasClass; mix: Mix;
@@ -153,7 +153,9 @@ interface LossReport { inflowLitres: number; drawnLitres: number; lineLossLitres
 interface FillInput { filledAt?: number;
   target: { type: 'CYLINDER'; waterVolumeLitres: number; cylinderLabel?: string;
             chargedMemberId: number }
-        | { type: 'VESSEL'; vesselId: number };
+        | { type: 'VESSEL'; vesselId: number }
+        | { type: 'BANK_DRAW'; chargedMemberId: number } /* DOMAIN §5.7: one VESSEL stage; the
+            pressures are the bank's: startPressureBar before, pressureAfterBar after */;
   startPressureBar: number; startMix?: Mix /* default AIR */;
   stages: { source: { type: 'VESSEL'; vesselId: number } | { type: 'AIR' };
             pressureAfterBar: number; sourcePressureAfterBar?: number }[];
@@ -202,3 +204,37 @@ interface Payment { paymentId: number; from: MemberRef; to: MemberRef; amount: M
 | GET | `/v1/teams/{teamId}/reports/consumption?from&to` | `{ rows: { member: MemberRef; o2Litres: number; heLitres: number; fills: number; charge: Money }[] }` — members with ≥ 1 cylinder fill in `[from, to)` (epoch millis, both optional), most expensive first; litres = bought gas only; charges at today's prices |
 | GET | `/v1/teams/{teamId}/reports/losses` | `{ vessels: { vessel: VesselSummary; report: LossReport }[] }` (closed vessels) |
 | GET | `/v1/teams/{teamId}/reports/policy-comparison` | `{ members: { member: MemberRef; trueUp: Money; pooled: Money; delta: Money }[] }` (DOMAIN §7.6; balances incl. payments; `delta` = shown `pooled` − shown `trueUp`) |
+
+## 7. Scrubber (DOMAIN §12)
+
+Every write answers with the whole `ScrubberCanister`.
+
+| Method | Path | Body → result |
+|---|---|---|
+| GET | `/v1/teams/{teamId}/scrubbers` | → `ScrubberCanister[]` (newest first) |
+| POST | `/v1/teams/{teamId}/scrubbers` | `CanisterCreate` |
+| GET | `/v1/teams/{teamId}/scrubbers/{canisterId}` | → `ScrubberCanister` |
+| POST | `…/{canisterId}/uses` | `ScrubberUseInput` |
+| DELETE | `…/{canisterId}/uses/{useId}` | |
+| POST | `…/{canisterId}/empty` | `{ emptiedAt?: number }` or no body (now) |
+| POST | `…/{canisterId}/reopen` | ADMIN |
+| POST | `…/{canisterId}/cost-lines` | `CostLineInput` |
+| DELETE | `…/{canisterId}/cost-lines/{costLineId}` | ADMIN |
+
+```ts
+interface CanisterCreate { label: string; capacityKg?: number /* default 23 */;
+  openedAt?: number; initialCostLines?: CostLineInput[] }
+interface ScrubberUseInput { memberId: number; kg: number; usedAt?: number }
+interface ScrubberCanister { canisterId: number; label: string; status: 'OPEN' | 'EMPTY';
+  capacityKg: number; recordedKg: number; remainingKg: number; totalCost: Money;
+  pricePerKg: Money /* 4 dp */; isEstimate: boolean; openedAt: number; emptiedAt?: number;
+  createdBy: MemberRef; costLines: { costLineId: number; payer: MemberRef; amount: Money;
+    paidAt: number; note?: string }[];
+  uses: { useId: number; member: MemberRef; kg: number; charge: Money; usedAt: number;
+    recordedBy: MemberRef }[] /* newest first */ }
+```
+
+`Team` and `TeamInput` carry `gasTrackingEnabled` and `scrubberTrackingEnabled` (absent in a
+`TeamInput`: unchanged, on for a new team). Off: creating a bank, a fill, a canister or a use answers
+409. `Balances.members[]` carry `scrubberPaid` and `scrubberCharges`; `provisionalCharges` includes
+charges from canisters not yet empty, `inventoryValue` what is paid but not yet charged.

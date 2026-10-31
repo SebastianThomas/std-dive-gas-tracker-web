@@ -1,5 +1,8 @@
 <template>
-  <PageShell :title="bank?.label ?? 'Bank'" :back="{ name: 'BankList', params: { teamId } }">
+  <PageShell
+    :title="bank?.label ?? (mixes ? 'Mix' : 'Bank')"
+    :back="{ name: mixes ? 'MixList' : 'BankList', params: { teamId } }"
+  >
     <LoadState :loading="loading" :error="error" :ready="bank !== null" @retry="reload">
       <template v-if="bank">
         <AppCard>
@@ -43,11 +46,19 @@
             </template>
           </dl>
           <p v-if="bank.rateIsEstimate" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            The price is an estimate until the bank is closed; fills from it are re-priced then.
+            The price is an estimate until the {{ noun }} is closed; fills from it are re-priced
+            then.
           </p>
           <p v-if="bank.notes" class="mt-2 break-words text-slate-700 dark:text-slate-300">
             {{ bank.notes }}
           </p>
+          <AppButton
+            v-if="mixes && bank.status === 'IN_SERVICE'"
+            class="mt-3 w-full"
+            :to="{ name: 'FillRecord', params: { teamId }, query: { into: bank.vesselId } }"
+          >
+            Fill this mix
+          </AppButton>
         </AppCard>
 
         <AppCard v-if="bank.lossReport" title="Losses">
@@ -152,9 +163,9 @@
           <ConfirmAction
             v-if="bank.status === 'IN_SERVICE' && canEdit"
             v-model:open="confirmClose"
-            label="Close bank"
-            message="Close the bank when it goes back to the supplier. Its final price is then fixed and every fill from it is re-priced."
-            confirm-label="Close bank"
+            :label="`Close ${noun}`"
+            :message="closeMessage"
+            :confirm-label="`Close ${noun}`"
             :busy="busy"
             @confirm="close"
           >
@@ -173,7 +184,7 @@
             :loading="busy"
             @click="reopen"
           >
-            Reopen bank
+            Reopen {{ noun }}
           </AppButton>
           <AppButton variant="link" :to="{ name: 'FillRecord', params: { teamId } }"
             >Record a fill</AppButton
@@ -212,8 +223,14 @@ import { toast } from 'vue-sonner'
 
 // F4: one bank: level, price, readings, costs, losses once closed; edit/close for an admin or
 // whoever added it, reopen for admins (DOMAIN §10).
+const props = defineProps<{ mixes?: boolean }>()
 const team = useTeamStore()
 const route = useRoute()
+const noun = computed(() => (props.mixes ? 'mix' : 'bank'))
+const closeMessage = computed(
+  () =>
+    `Close the ${noun.value} when ${props.mixes ? 'it is used up' : 'it goes back to the supplier'}. Its final price is then fixed and every fill from it is re-priced.`,
+)
 const { teamId } = useTeamRoute()
 const vesselId = computed(() => Number(route.params.vesselId))
 const {
@@ -253,14 +270,14 @@ async function addReading() {
 async function close() {
   const pressure = parseDecimal(closingPressure.value)
   if (pressure === null) {
-    toast.error('Enter the pressure left in the bank.')
+    toast.error(`Enter the pressure left in the ${noun.value}.`)
     return
   }
   busy.value = true
   try {
     bank.value = await useVesselsApi().close(teamId.value, vesselId.value, pressure)
     confirmClose.value = false
-    toast.success('Bank closed; its fills now have their final price.')
+    toast.success('Closed; its fills now have their final price.')
   } catch (err) {
     toast.error(extractErrorDetail(err))
   } finally {

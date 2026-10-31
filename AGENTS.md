@@ -26,12 +26,12 @@ for one hand, big targets, minimal typing. Online-only in v1.
 ## Keep it simple (the human's standing instruction)
 
 The app must be **easy to use and not complicated**. Before adding anything, check it against the
-simplicity budget in [`docs/PLAN.md`](docs/PLAN.md) — five tabs (Home, Fill, Banks, Money, Team),
+simplicity budget in [`docs/PLAN.md`](docs/PLAN.md) — up to seven tabs (Home, Fill, Blend, Banks, Scrubber, Money, Team; a team can switch off gas or scrubber),
 one primary action per screen, the usual fill recorded with a cylinder size and three pressures.
 
 - Defaults over options: remember the last cylinder size; preselect the fullest bank of each gas;
   start mix = air. Rare inputs live under one collapsed "More details", never as extra steps.
-- Plain words, never enum names or internals: "bank", "you owe" / "you're owed", "Exact per
+- Plain words, never enum names or internals: "bank", "mix" (a blended product, in the Blend tab), "you owe" / "you're owed", "Exact per
   bank" (TRUE_UP), "Shared loss pool" (POOLED), "estimate" (provisional). One line of helper text
   beats a dialog.
 - No screen, setting, filter, toggle or chart that no PLAN task asks for. Confirmation dialogs only
@@ -102,7 +102,7 @@ Both launch configs live in `.claude/launch.json` (gitignored, absolute paths).
 
 ```
 views/              routed pages, one per route (<Name>View.vue)
-components/<area>/  feature components, one folder per tab (fill/, bank/, money/, team/)
+components/<area>/  feature components, one folder per tab (fill/, bank/, scrubber/, money/, team/)
 components/ui/      small primitives: AppButton (also links via `to`), TextField, SelectField,
                     AppCard, LoadState, ConfirmAction (no component library)
 components/layout/  AppHeader, BottomNav, TeamLayout, PageShell
@@ -118,8 +118,8 @@ __tests__/          ALL unit tests (*.spec.ts), named after what they cover
 
 ## Routes (planned — add a route here before implementing it)
 
-Phones get a bottom tab bar: **Home · Fill · Banks · Money · Team**; ≥ 768 px may show the same
-five as a top nav. The current team id is in the URL — never only in a store.
+Phones get a bottom tab bar: **Home · Fill · Blend · Banks · Scrubber · Money · Team**; ≥ 768 px may show the same
+as a top nav. The current team id is in the URL — never only in a store.
 
 | Path | View | Task |
 |---|---|---|
@@ -129,6 +129,8 @@ five as a top nav. The current team id is in the URL — never only in a store.
 | `/t/:teamId` | Home: my balance, low banks, my last fills, "Record a fill" | F8 |
 | `/t/:teamId/fill`, `/t/:teamId/fills`, `/t/:teamId/fills/:fillId` | FillRecordView, FillListView, FillDetailView | F5 |
 | `/t/:teamId/banks`, `/t/:teamId/banks/new`, `/t/:teamId/banks/:vesselId` | BankListView, BankCreateView, BankDetailView | F4 |
+| `/t/:teamId/blend`, `/t/:teamId/blend/new`, `/t/:teamId/blend/:vesselId` | BankListView, BankCreateView, BankDetailView with `mixes` (a mix = a bank with gas class NITROX or TRIMIX) | Blend |
+| `/t/:teamId/scrubber`, `/t/:teamId/scrubber/new`, `/t/:teamId/scrubber/:canisterId` | ScrubberListView, ScrubberCreateView, ScrubberDetailView | Scrubber |
 | `/t/:teamId/money` | MoneyView (balances, who pays whom, payments) | F6 |
 | `/t/:teamId/team` (+ `/reports`) | TeamView (members, settings), ReportsView | F3, F7 |
 

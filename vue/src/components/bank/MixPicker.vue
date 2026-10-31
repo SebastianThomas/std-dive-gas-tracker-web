@@ -3,7 +3,7 @@
     <legend class="mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">
       {{ legend }}
     </legend>
-    <div class="flex flex-wrap gap-2">
+    <div v-if="!onlyMix" class="flex flex-wrap gap-2">
       <button
         v-for="option in options"
         :key="option.kind"
@@ -46,7 +46,7 @@ import TextField from '@/components/ui/TextField.vue'
 import type { MixChoice } from '@/lib/utils/banks'
 
 // A bank's gas: O2, He, Air (an empty bank for blending nitrox) or a mix in percent.
-withDefaults(defineProps<{ id: string; legend?: string }>(), { legend: 'Gas' })
+withDefaults(defineProps<{ id: string; legend?: string; onlyMix?: boolean }>(), { legend: 'Gas' })
 const model = defineModel<MixChoice>({ required: true })
 
 const options: { kind: MixChoice['kind']; label: string }[] = [

@@ -80,13 +80,15 @@ Backend:
   The two loss policies are a `LossPolicy` enum handled inside the engine — not a plugin system.
 - One `*DataService` per aggregate, one controller per API.md section, thin controllers.
 
-Frontend — five places, one primary action each:
+Frontend — up to seven places (a team may switch off gas or scrubber), one primary action each:
 
 | Tab (phone bottom bar) | Primary action | Everything else |
 |---|---|---|
 | **Home** | "Record a fill" | my balance, low banks, my last fills |
-| **Fill** | Save fill | defaults pre-filled; extras behind "More details" |
+| **Fill** | Save fill | two panes: a cylinder with its gases, or how far a bank went down; defaults pre-filled; extras behind "More details" |
+| **Blend** | Add mix | available mixes (banks holding blended gas): levels, fill into or from them |
 | **Banks** | Add bank | levels at a glance; detail page for readings/costs/close |
+| **Scrubber** | Save (record use) | shared absorbent canisters: what is left, uses, costs, "it is empty now" |
 | **Money** | Record payment | who owes whom (suggestions), my breakdown, payments list |
 | **Team** (admin extras) | — | members, team settings, reports |
 
@@ -383,7 +385,7 @@ present, anything beyond DOMAIN/API removed, one end-to-end scenario (§11.4 via
 
 ## Phase 4 — Frontend (`vue/`)
 
-Mobile-first, five tabs (see the simplicity budget). Sequential within the lane (shared router
+Mobile-first, up to seven tabs (see the simplicity budget). Sequential within the lane (shared router
 and stores). Each task: component tests for non-trivial logic in `src/__tests__/`, and the
 Browser-pane mobile/dark check against a local backend with `demo-seed` (recipe in the frontend
 AGENTS.md). Every new screen is checked against the budget table before it is called done.

@@ -1,6 +1,6 @@
-import type { Mix, VesselSummary } from '@/lib/api/types'
+import type { CostLineInput, Mix, VesselSummary } from '@/lib/api/types'
 import { AIR, mixLabel } from '@/lib/format/mix'
-import { parseDecimal } from '@/lib/format/number'
+import { parseDecimal, parseMoney } from '@/lib/format/number'
 
 // Display rules for bank levels (UI only; the pressures themselves come from the backend).
 
@@ -16,6 +16,40 @@ export function isLow(bank: VesselSummary): boolean {
 /** Width of the level bar in % (0–100). */
 export function levelPercent(pressureBar: number): number {
   return Math.min(100, Math.max(0, (pressureBar / LEVEL_SCALE_BAR) * 100))
+}
+
+/** A mix: a bank holding blended gas rather than a pure gas (the backend's gas class says which). */
+export function isMix(bank: Pick<VesselSummary, 'gasClass'>): boolean {
+  return bank.gasClass === 'NITROX' || bank.gasClass === 'TRIMIX'
+}
+
+/** The route of a bank's page: mixes live under the Blend tab. */
+export function bankDetailRoute(bank: Pick<VesselSummary, 'gasClass'>): 'MixDetail' | 'BankDetail' {
+  return isMix(bank) ? 'MixDetail' : 'BankDetail'
+}
+
+/** One person who paid for a new bank, as typed in the form. */
+export interface CostRow {
+  key: number
+  amount: string
+  payerId: number
+}
+
+let nextCostRowKey = 1
+export function newCostRow(payerId: number): CostRow {
+  return { key: nextCostRowKey++, amount: '', payerId }
+}
+
+/** The rows as cost lines (rows left empty are skipped), or the first thing to fix. */
+export function costLinesOf(rows: CostRow[], paidAt?: number): CostLineInput[] | string {
+  const lines: CostLineInput[] = []
+  for (const row of rows) {
+    if (row.amount.trim() === '') continue
+    const amount = parseMoney(row.amount)
+    if (amount === null) return 'Enter the amount like 120.50.'
+    lines.push({ amount, payerMemberId: row.payerId, ...(paidAt !== undefined ? { paidAt } : {}) })
+  }
+  return lines
 }
 
 /** The gas of a bank as picked in a form: the three usual ones, or O2/He percentages. */

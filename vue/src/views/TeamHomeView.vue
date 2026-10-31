@@ -1,7 +1,19 @@
 <template>
   <PageShell :title="team.team?.name ?? 'Home'">
-    <AppButton :to="{ name: 'FillRecord', params: { teamId } }" class="w-full py-3 text-lg">
+    <AppButton
+      v-if="team.gasEnabled"
+      :to="{ name: 'FillRecord', params: { teamId } }"
+      class="w-full py-3 text-lg"
+    >
       <i class="fa-solid fa-circle-plus" aria-hidden="true" />Record a fill
+    </AppButton>
+    <AppButton
+      v-if="team.scrubberEnabled"
+      :variant="team.gasEnabled ? 'secondary' : undefined"
+      :to="{ name: 'ScrubberList', params: { teamId } }"
+      :class="team.gasEnabled ? 'w-full' : 'w-full py-3 text-lg'"
+    >
+      <i class="fa-solid fa-filter" aria-hidden="true" />Record scrubber use
     </AppButton>
 
     <LoadState :loading="loading" :error="error" :ready="data !== null" @retry="reload">
@@ -23,11 +35,11 @@
             v-if="mine && Number(mine.provisionalCharges) > 0"
             class="mt-1 text-sm text-amber-700 dark:text-amber-400"
           >
-            Partly an estimate: banks still in use are re-priced when they are closed.
+            Partly an estimate: banks and canisters still in use are re-priced when finished.
           </p>
         </AppCard>
 
-        <AppCard title="Low banks">
+        <AppCard v-if="team.gasEnabled" title="Low banks">
           <template #actions>
             <AppButton variant="link" :to="{ name: 'BankList', params: { teamId } }"
               >Banks</AppButton
@@ -43,7 +55,7 @@
           </ul>
         </AppCard>
 
-        <AppCard title="My last fills">
+        <AppCard v-if="team.gasEnabled" title="My last fills">
           <template #actions>
             <AppButton variant="link" :to="{ name: 'FillList', params: { teamId } }"
               >All fills</AppButton
@@ -88,13 +100,15 @@ const { teamId } = useTeamRoute()
 const { data, loading, error, reload } = useLoad(async () => {
   const [balances, banks, fills] = await Promise.all([
     useBalancesApi().balances(teamId.value),
-    useVesselsApi().list(teamId.value, 'IN_SERVICE'),
-    useFillsApi().list(teamId.value, {
-      memberId: team.myMemberId ?? undefined,
-      size: RECENT_FILLS,
-    }),
+    team.gasEnabled ? useVesselsApi().list(teamId.value, 'IN_SERVICE') : [],
+    team.gasEnabled
+      ? useFillsApi().list(teamId.value, {
+          memberId: team.myMemberId ?? undefined,
+          size: RECENT_FILLS,
+        })
+      : null,
   ])
-  return { balances, banks, fills: fills.result }
+  return { balances, banks, fills: fills?.result ?? [] }
 })
 const mine = computed(() =>
   data.value?.balances.members.find((row) => row.member.memberId === team.myMemberId),

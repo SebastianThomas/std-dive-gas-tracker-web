@@ -11,7 +11,18 @@
         </p>
 
         <template v-if="editing && banks">
+          <BankDrawForm
+            v-if="fill.target.type === 'BANK_DRAW'"
+            :banks="banks"
+            :initial="bankDrawFromFill(fill)"
+            :replacing-fill-id="fill.fillId"
+            submit-label="Save changes"
+            :saving="saving"
+            details-open
+            @submit="saveEdit"
+          />
           <FillForm
+            v-else
             :banks="banks"
             :initial="draftFromFill(fill)"
             :replacing-fill-id="fill.fillId"
@@ -30,7 +41,12 @@
                 {{ formatMoney(fill.totalCharge, team.currency) }}
               </span>
               <span class="text-slate-700 dark:text-slate-300">
-                {{ mixLabel(fill.endMix) }} at {{ formatBar(fill.endPressureBar) }}
+                <template v-if="fill.target.type === 'BANK_DRAW'">
+                  {{ mixLabel(fill.endMix) }} from the bank
+                </template>
+                <template v-else>
+                  {{ mixLabel(fill.endMix) }} at {{ formatBar(fill.endPressureBar) }}
+                </template>
               </span>
             </p>
             <p v-if="isEstimate" class="mt-1 text-sm text-amber-700 dark:text-amber-400">
@@ -39,16 +55,26 @@
             <dl
               class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-slate-700 dark:text-slate-300"
             >
-              <dt class="text-slate-500 dark:text-slate-400">Into</dt>
-              <dd>{{ targetText }}</dd>
+              <template v-if="fill.target.type !== 'BANK_DRAW'">
+                <dt class="text-slate-500 dark:text-slate-400">Into</dt>
+                <dd>{{ targetText }}</dd>
+              </template>
               <template v-if="fill.chargedMember">
                 <dt class="text-slate-500 dark:text-slate-400">Charged to</dt>
                 <dd>{{ fill.chargedMember.displayName }}</dd>
               </template>
               <dt class="text-slate-500 dark:text-slate-400">When</dt>
               <dd>{{ formatDateTime(fill.filledAt) }}</dd>
-              <dt class="text-slate-500 dark:text-slate-400">Before</dt>
-              <dd>{{ formatBar(fill.startPressureBar) }}, {{ mixLabel(fill.startMix) }}</dd>
+              <template v-if="fill.target.type === 'BANK_DRAW'">
+                <dt class="text-slate-500 dark:text-slate-400">Bank</dt>
+                <dd>
+                  {{ formatBar(fill.startPressureBar) }} → {{ formatBar(fill.endPressureBar) }}
+                </dd>
+              </template>
+              <template v-else>
+                <dt class="text-slate-500 dark:text-slate-400">Before</dt>
+                <dd>{{ formatBar(fill.startPressureBar) }}, {{ mixLabel(fill.startMix) }}</dd>
+              </template>
               <template v-if="fill.endAnalysis">
                 <dt class="text-slate-500 dark:text-slate-400">Analysed</dt>
                 <dd>{{ mixLabel(fill.endAnalysis) }}</dd>
@@ -80,12 +106,17 @@
                   <span class="shrink-0">{{ formatMoney(stage.charge, team.currency) }}</span>
                 </span>
                 <span class="text-sm text-slate-500 dark:text-slate-400">
-                  +{{ formatLitres(stage.addedLitres) }}
+                  {{ fill.target.type === 'BANK_DRAW' ? '' : '+'
+                  }}{{ formatLitres(stage.addedLitres) }}
                   <template v-if="stage.addedHeLitres > 0">
                     ({{ formatLitres(stage.addedHeLitres) }} He)</template
                   ><template v-else-if="stage.addedO2Litres > 0 && stage.source.type === 'VESSEL'">
                     ({{ formatLitres(stage.addedO2Litres) }} O2)</template
-                  ><template v-if="stage.sourcePressureAfterBar !== undefined">
+                  ><template
+                    v-if="
+                      stage.sourcePressureAfterBar !== undefined && fill.target.type !== 'BANK_DRAW'
+                    "
+                  >
                     · bank gauge {{ formatBar(stage.sourcePressureAfterBar) }}</template
                   >
                 </span>
@@ -130,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import BankDrawForm from '@/components/fill/BankDrawForm.vue'
 import FillForm from '@/components/fill/FillForm.vue'
 import PageShell from '@/components/layout/PageShell.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -142,7 +174,7 @@ import { useTeamRoute } from '@/composables/useTeamRoute'
 import { useFillsApi } from '@/lib/api/fills'
 import type { FillInput, VesselSummary } from '@/lib/api/types'
 import { useVesselsApi } from '@/lib/api/vessels'
-import { draftFromFill } from '@/lib/fill/fillForm'
+import { bankDrawFromFill, draftFromFill } from '@/lib/fill/fillForm'
 import { formatDateTime } from '@/lib/format/dates'
 import { mixLabel } from '@/lib/format/mix'
 import { formatMoney } from '@/lib/format/money'
@@ -175,6 +207,7 @@ const isEstimate = computed(() => fill.value?.stages.some((stage) => stage.isEst
 const targetText = computed(() => {
   const target = fill.value?.target
   if (!target) return ''
+  if (target.type === 'BANK_DRAW') return ''
   if (target.type === 'VESSEL') return `Bank ${target.vesselLabel ?? ''}`
   const size = `${formatWaterVolume(target.waterVolumeLitres)} cylinder`
   return target.cylinderLabel ? `${target.cylinderLabel} (${size})` : size

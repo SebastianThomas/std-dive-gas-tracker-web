@@ -4,7 +4,10 @@
     class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95"
     style="padding-bottom: env(safe-area-inset-bottom)"
   >
-    <ul class="mx-auto grid max-w-screen-md grid-cols-5">
+    <ul
+      class="mx-auto grid max-w-screen-md"
+      :style="{ gridTemplateColumns: `repeat(${tabs.length}, minmax(44px, auto))` }"
+    >
       <li v-for="tab in tabs" :key="tab.name">
         <RouterLink
           :to="{ name: tab.name, params: { teamId } }"
@@ -25,9 +28,11 @@
 </template>
 
 <script setup lang="ts">
+import { useTeamStore } from '@/stores/team'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-// The five places of the app (docs/PLAN.md simplicity budget).
+// The places of the app (docs/PLAN.md simplicity budget); what a team does not track stays away.
 defineProps<{ teamId: number }>()
 
 interface Tab {
@@ -38,13 +43,39 @@ interface Tab {
   also: string[]
 }
 
-const tabs: Tab[] = [
+const team = useTeamStore()
+const tabs = computed<Tab[]>(() => [
   { name: 'TeamHome', label: 'Home', icon: 'fa-house', also: [] },
-  { name: 'FillRecord', label: 'Fill', icon: 'fa-circle-plus', also: ['FillList', 'FillDetail'] },
-  { name: 'BankList', label: 'Banks', icon: 'fa-gauge-high', also: ['BankCreate', 'BankDetail'] },
+  ...(team.gasEnabled
+    ? [
+        {
+          name: 'FillRecord',
+          label: 'Fill',
+          icon: 'fa-circle-plus',
+          also: ['FillList', 'FillDetail'],
+        },
+        { name: 'MixList', label: 'Blend', icon: 'fa-flask', also: ['MixCreate', 'MixDetail'] },
+        {
+          name: 'BankList',
+          label: 'Banks',
+          icon: 'fa-gauge-high',
+          also: ['BankCreate', 'BankDetail'],
+        },
+      ]
+    : []),
+  ...(team.scrubberEnabled
+    ? [
+        {
+          name: 'ScrubberList',
+          label: 'Scrubber',
+          icon: 'fa-filter',
+          also: ['ScrubberCreate', 'ScrubberDetail'],
+        },
+      ]
+    : []),
   { name: 'Money', label: 'Money', icon: 'fa-coins', also: [] },
   { name: 'TeamSettings', label: 'Team', icon: 'fa-users', also: ['Reports'] },
-]
+])
 
 const route = useRoute()
 const isActive = (tab: Tab) =>

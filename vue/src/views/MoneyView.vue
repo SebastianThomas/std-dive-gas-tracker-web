@@ -16,8 +16,8 @@
             v-if="mine && Number(mine.provisionalCharges) > 0"
             class="mt-1 text-sm text-amber-700 dark:text-amber-400"
           >
-            Includes {{ money(mine.provisionalCharges) }} estimated: banks still in use are
-            re-priced when they are closed.
+            Includes {{ money(mine.provisionalCharges) }} estimated: banks and canisters still in
+            use are re-priced when they are finished.
           </p>
           <details v-if="mine" class="mt-2">
             <summary
@@ -34,6 +34,12 @@
               <dd class="text-right">−{{ money(mine.fillCharges) }}</dd>
               <dt>Your share of losses</dt>
               <dd class="text-right">−{{ money(mine.lossShares) }}</dd>
+              <template v-if="hasScrubber">
+                <dt>You paid for scrubber</dt>
+                <dd class="text-right">{{ money(mine.scrubberPaid) }}</dd>
+                <dt>Scrubber you used</dt>
+                <dd class="text-right">−{{ money(mine.scrubberCharges) }}</dd>
+              </template>
               <dt>Payments you made</dt>
               <dd class="text-right">{{ money(mine.paymentsSent) }}</dd>
               <dt>Payments you received</dt>
@@ -100,7 +106,7 @@
             </li>
           </ul>
           <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Gas still in the banks is worth {{ money(data.balances.inventoryValue) }}.
+            Gas and scrubber still in stock are worth {{ money(data.balances.inventoryValue) }}.
           </p>
         </AppCard>
 
@@ -185,6 +191,11 @@ const money = (amount: string) =>
   formatMoney(amount, data.value?.balances.currency ?? team.currency)
 const mine = computed(() =>
   data.value?.balances.members.find((row) => row.member.memberId === team.myMemberId),
+)
+const hasScrubber = computed(
+  () =>
+    mine.value !== undefined &&
+    (Number(mine.value.scrubberPaid) !== 0 || Number(mine.value.scrubberCharges) !== 0),
 )
 /** Payer, recipient or an admin may record or delete a payment (DOMAIN §10). */
 const canRecord = (fromId: number, toId: number) =>

@@ -1,37 +1,41 @@
 <template>
   <form class="flex flex-col gap-4" novalidate @submit.prevent="submit">
-    <AppCard :title="intoBank ? 'Into a bank' : 'Cylinder'">
+    <AppCard :title="intoBank ? (isMix(intoBank) ? 'Into a mix' : 'Into a bank') : 'Cylinder'">
       <p v-if="intoBank" class="text-slate-700 dark:text-slate-300">
         Blending into <strong>{{ intoBank.label }}</strong> (change under “More details”).
       </p>
       <div v-else class="flex flex-col gap-3">
-        <div class="flex flex-wrap gap-2" role="group" aria-label="Cylinder size">
-          <button
-            v-for="size in CYLINDER_SIZES"
-            :key="size.label"
-            type="button"
-            class="min-h-11 min-w-16 rounded-full border px-3 text-base font-medium"
-            :class="
-              draft.waterVolume === size.litres
-                ? 'border-sky-600 bg-sky-600 text-white'
-                : 'border-slate-300 bg-white text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100'
-            "
-            :aria-pressed="draft.waterVolume === size.litres"
-            @click="draft.waterVolume = size.litres"
+        <QuickChips v-model="draft.waterVolume" :options="CYLINDER_SIZES" label="Cylinder size" />
+        <details :open="moreSizeSelected">
+          <summary
+            class="flex min-h-11 cursor-pointer items-center font-medium text-slate-800 dark:text-slate-200"
           >
-            {{ size.label }}
-          </button>
-        </div>
+            More sizes
+          </summary>
+          <QuickChips
+            v-model="draft.waterVolume"
+            :options="MORE_CYLINDER_SIZES"
+            label="More cylinder sizes"
+          />
+        </details>
         <TextField
           id="fill-size"
           v-model="draft.waterVolume"
           label="Size"
           unit="L"
           inputmode="decimal"
-          hint="Water volume; a twinset counts both cylinders."
+          hint="Water volume; a twinset counts both. A cuft size fills in its usual litres."
           class="max-w-56"
         />
       </div>
+      <TextField
+        id="fill-start-pressure"
+        v-model="draft.startPressure"
+        class="mt-3 max-w-56"
+        label="Pressure before filling"
+        unit="bar"
+        inputmode="decimal"
+      />
     </AppCard>
 
     <AppCard title="Gases">
@@ -94,54 +98,13 @@
       </div>
     </AppCard>
 
-    <AppCard title="Result">
-      <div role="status" aria-live="polite" class="min-h-24">
-        <p v-if="'problem' in mapped" class="text-slate-500 dark:text-slate-400">
-          {{ mapped.problem }}
-        </p>
-        <p v-else-if="previewError" class="text-red-700 dark:text-red-400">{{ previewError }}</p>
-        <div v-else-if="preview" class="flex flex-col gap-2" :class="{ 'opacity-60': previewing }">
-          <p class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span class="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              {{ formatMoney(preview.totalCharge, team.currency) }}
-            </span>
-            <span class="text-slate-700 dark:text-slate-300">
-              {{ mixLabel(preview.endMix) }} at {{ formatBar(preview.endPressureBar) }}
-            </span>
-          </p>
-          <p v-if="isEstimate" class="text-sm text-amber-700 dark:text-amber-400">
-            Estimate: the final price is set when the bank is closed.
-          </p>
-          <ul class="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
-            <li
-              v-for="stage in preview.stages"
-              :key="stage.index"
-              class="flex justify-between gap-2"
-            >
-              <span class="min-w-0">
-                {{ stage.index + 1 }}. {{ stageSourceName(stage.source) }}: +{{
-                  formatLitres(stage.addedLitres)
-                }}
-              </span>
-              <span class="shrink-0">{{ formatMoney(stage.charge, team.currency) }}</span>
-            </li>
-          </ul>
-          <ul v-if="preview.warnings.length" class="flex flex-col gap-1">
-            <li
-              v-for="warning in preview.warnings"
-              :key="`${warning.code}-${warning.stageIndex}`"
-              class="text-sm text-amber-700 dark:text-amber-400"
-            >
-              <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true" />
-              {{ warning.message }}
-            </li>
-          </ul>
-        </div>
-        <p v-else class="text-slate-500 dark:text-slate-400">
-          <i class="fa-solid fa-spinner fa-spin mr-2" aria-hidden="true" />Calculating…
-        </p>
-      </div>
-    </AppCard>
+    <FillResultCard
+      :problem="'problem' in mapped ? mapped.problem : undefined"
+      :preview="preview"
+      :error="previewError"
+      :previewing="previewing"
+      :is-estimate="isEstimate"
+    />
 
     <details :open="detailsOpen" class="rounded-2xl bg-white shadow-sm dark:bg-slate-900">
       <summary
@@ -153,7 +116,7 @@
         <SelectField id="fill-into" v-model="intoKey" label="Fill into">
           <option :value="CYLINDER_KEY">A diver's cylinder</option>
           <option v-for="bank in targetBanks" :key="bank.vesselId" :value="bank.vesselId">
-            Bank: {{ bank.label }}
+            {{ isMix(bank) ? 'Mix' : 'Bank' }}: {{ bank.label }}
           </option>
         </SelectField>
         <template v-if="!intoBank">
@@ -173,14 +136,6 @@
             placeholder="e.g. D12 #2"
           />
         </template>
-        <TextField
-          id="fill-start-pressure"
-          v-model="draft.startPressure"
-          label="Pressure before filling"
-          unit="bar"
-          inputmode="decimal"
-          class="max-w-56"
-        />
         <fieldset class="flex flex-col gap-2">
           <legend class="text-sm font-medium text-slate-700 dark:text-slate-300">
             Gas already in it (empty: air)
@@ -256,14 +211,16 @@
 
 <script setup lang="ts">
 import AppButton from '@/components/ui/AppButton.vue'
+import FillResultCard from '@/components/fill/FillResultCard.vue'
 import AppCard from '@/components/ui/AppCard.vue'
+import QuickChips from '@/components/ui/QuickChips.vue'
 import SelectField from '@/components/ui/SelectField.vue'
 import TextField from '@/components/ui/TextField.vue'
-import { useTeamRoute } from '@/composables/useTeamRoute'
-import { useFillsApi } from '@/lib/api/fills'
-import type { FillInput, FillPreview, StageSource, VesselSummary } from '@/lib/api/types'
+import { useFillPreview } from '@/composables/useFillPreview'
+import type { FillInput, VesselSummary } from '@/lib/api/types'
 import {
   CYLINDER_SIZES,
+  MORE_CYLINDER_SIZES,
   STAGE_GASES,
   fullestBank,
   newStage,
@@ -271,17 +228,14 @@ import {
   type FillDraft,
   type StageDraft,
 } from '@/lib/fill/fillForm'
-import { formatMoney } from '@/lib/format/money'
-import { mixLabel } from '@/lib/format/mix'
-import { formatBar, formatLitres } from '@/lib/format/units'
-import { extractErrorDetail } from '@/lib/utils/apiErrors'
+import { formatBar } from '@/lib/format/units'
+import { isMix } from '@/lib/utils/banks'
 import { useTeamStore } from '@/stores/team'
-import axios from 'axios'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-// The fill form (record and edit): cylinder, gases with "after" pressures, a live preview from
-// the backend (debounced), and the rare inputs under "More details" (docs/PLAN.md budget).
+// The fill form (record and edit): cylinder and its start pressure, gases with "after" pressures, a
+// live preview from the backend, and the rare inputs under "More details" (docs/PLAN.md budget).
 const props = defineProps<{
   /** Every bank of the team (closed ones only show up when a stage already uses them). */
   banks: VesselSummary[]
@@ -296,16 +250,17 @@ const emit = defineEmits<{ submit: [input: FillInput] }>()
 
 const AIR_KEY = 0
 const CYLINDER_KEY = 0
-const PREVIEW_DELAY_MS = 300
 
 const team = useTeamStore()
-const { teamId } = useTeamRoute()
 const draft = ref<FillDraft>({
   ...props.initial,
   stages: props.initial.stages.map((stage) => ({ ...stage })),
 })
 
 const bankById = computed(() => new Map(props.banks.map((bank) => [bank.vesselId, bank])))
+const moreSizeSelected = computed(() =>
+  MORE_CYLINDER_SIZES.some((size) => size.value === draft.value.waterVolume),
+)
 const inService = computed(() => props.banks.filter((bank) => bank.status === 'IN_SERVICE'))
 const intoBank = computed(() =>
   draft.value.intoVesselId === null ? undefined : bankById.value.get(draft.value.intoVesselId),
@@ -339,8 +294,6 @@ const bankOption = (bank: VesselSummary) =>
 const bankLabel = (vesselId: number) => bankById.value.get(vesselId)?.label ?? '?'
 const bankName = (stage: StageDraft) =>
   stage.source.type === 'VESSEL' ? bankLabel(stage.source.vesselId) : ''
-const stageSourceName = (source: StageSource) =>
-  source.type === 'VESSEL' ? (source.label ?? bankLabel(source.vesselId)) : 'Air'
 
 /** "+ He", "+ O2", … for each gas the team has a bank of (fullest one preselected). */
 const addableGases = computed(() =>
@@ -363,53 +316,11 @@ const bankStages = computed(() =>
     .filter(({ stage }) => stage.source.type === 'VESSEL'),
 )
 
-// --- live preview -------------------------------------------------------------------------
 const mapped = computed(() => toFillInput(draft.value))
-const preview = ref<FillPreview | null>(null)
-const previewError = ref<string | null>(null)
-const previewing = ref(false)
-const isEstimate = computed(() => preview.value?.stages.some((stage) => stage.isEstimate) ?? false)
-let timer: ReturnType<typeof setTimeout> | undefined
-let inFlight: AbortController | undefined
-
-async function runPreview(input: FillInput) {
-  const controller = new AbortController()
-  inFlight = controller
-  previewing.value = true
-  try {
-    preview.value = await useFillsApi().preview(
-      teamId.value,
-      input,
-      controller.signal,
-      props.replacingFillId,
-    )
-    previewError.value = null
-  } catch (err) {
-    if (controller.signal.aborted || axios.isCancel(err)) return
-    preview.value = null
-    previewError.value = extractErrorDetail(err)
-  } finally {
-    if (inFlight === controller) previewing.value = false
-  }
-}
-
-watch(
+const { preview, previewError, previewing, isEstimate } = useFillPreview(
   mapped,
-  (current) => {
-    clearTimeout(timer)
-    inFlight?.abort()
-    inFlight = undefined
-    if ('problem' in current) return
-    // the last result stays (dimmed) until the new one arrives: no layout jump while typing
-    previewing.value = true
-    timer = setTimeout(() => void runPreview(current.input), PREVIEW_DELAY_MS)
-  },
-  { immediate: true },
+  props.replacingFillId,
 )
-onBeforeUnmount(() => {
-  clearTimeout(timer)
-  inFlight?.abort()
-})
 
 function submit() {
   const current = mapped.value

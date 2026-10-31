@@ -15,6 +15,8 @@ export const useTeamStore = defineStore('team', () => {
   const isAdmin = computed(() => team.value?.role === 'ADMIN')
   const myMemberId = computed(() => team.value?.memberId ?? null)
   const currency = computed(() => team.value?.currency ?? 'CHF')
+  const gasEnabled = computed(() => team.value?.gasTrackingEnabled ?? true)
+  const scrubberEnabled = computed(() => team.value?.scrubberTrackingEnabled ?? true)
   /** Who can be charged for a fill or named on a cost line: everyone but LEFT members. */
   const selectableMembers = computed(() => members.value.filter((m) => m.status !== 'LEFT'))
 
@@ -45,6 +47,8 @@ export const useTeamStore = defineStore('team', () => {
     isAdmin,
     myMemberId,
     currency,
+    gasEnabled,
+    scrubberEnabled,
     selectableMembers,
     load,
     reloadMembers,

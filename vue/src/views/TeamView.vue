@@ -1,7 +1,9 @@
 <template>
   <PageShell :title="team.team?.name ?? 'Team'">
     <template #actions>
-      <AppButton variant="link" :to="{ name: 'Reports', params: { teamId } }">Reports</AppButton>
+      <AppButton v-if="team.gasEnabled" variant="link" :to="{ name: 'Reports', params: { teamId } }"
+        >Reports</AppButton
+      >
     </template>
 
     <AppCard title="Members">

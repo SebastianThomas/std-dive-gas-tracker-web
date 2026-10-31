@@ -789,3 +789,69 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   Fix: `UserRepository.lockUser` (`pg_advisory_xact_lock(userId)`) before writing the user row,
   only on the slow path (new user or changed email); same harness then 0 failures in 2,400.
   Real-world effect was a first login firing several requests at once getting one error.
+
+## 2026-10-30 — Orchestrator (`JWT_PUBLIC_KEY` is a GitHub secret, the human's call)
+
+- `deploy.yml` reads `secrets.JWT_PUBLIC_KEY` instead of `vars.JWT_PUBLIC_KEY`; the script and docs
+  say so. The VAPID public key and subject stay variables.
+
+## 2026-10-30 — Orchestrator (sign-up link, shared bank costs, Blend tab: the human's request)
+
+- **Sign-up link.** Accounts live in the dive logger, so the login page links to its
+  `/auth/signup` (`VITE_SIGNUP_URL` per environment, new tab). Unset locally: no link.
+- **Several payers.** `VesselCreate.initialCostLine` became `initialCostLines` (a list, one line
+  per person), created atomically with the bank; the same payer rule applies per line, so a
+  member can only book their own share and an admin anyone's. No split-evenly helper: dividing
+  money is domain math (AGENTS rule 3), so each person's amount is typed. No migration: cost lines
+  already allowed several payers.
+- **Blend tab, Mix = a bank holding blended gas.** Six tabs now (the human widened the five-tab
+  budget); a mix is a bank with gas class NITROX or TRIMIX, so there is no new table, field or
+  endpoint: inventory, pricing, fills from and into it and closing are the bank's. The bank views
+  take a `mixes` prop. A bought pre-mixed bank therefore also shows under Blend, and a bank
+  whose analysis changes its gas class moves tabs. A mix asks for no cost when added: its price
+  comes from the fills into it. "Fill this mix" opens the fill form with it as target.
+- **Local test note.** `yarn test:ci` fails 7 `authStore` tests on Node 26 (its built-in
+  `localStorage` shadows jsdom's), on the committed code too; all pass on Node 20.
+
+## 2026-10-31 — Orchestrator (cuft and other cylinder sizes, the human's request)
+
+- 40 and 80 cuft are quick picks; 3, 5, 8.5, 18 L, 2×10 L and 13, 19, 30, 63, 100, 120, 2×80 cuft
+  sit under "More sizes", which opens by itself when the remembered size is one of them. A cuft
+  size only fills in its water volume, which stays editable: aluminium per Luxfer's spec sheet,
+  100/120 per Faber's high-pressure steel (a cuft label does not fix the volume: an aluminium 80 is
+  11.1 L, a steel HP80 10.2 L). Nothing new is stored; the backend still only sees litres.
+
+## 2026-10-31 — Orchestrator (two ways to record a fill, the human's request)
+
+- **Fill has two panes:** "Fill a cylinder" (size, start pressure, gases) and "Bank went down"
+  (bank, its pressure before and now). The selector remembers the last pane; "Fill this mix" always
+  opens the cylinder pane. 2 L and 3 L are quick picks; start pressure moved out of "More details".
+- **Bank draw = third target type `BANK_DRAW`, not a guessed cylinder** (DOMAIN §5.7). The drop *is*
+  the draw, by the same real-gas model, so nothing about the unknown cylinder is invented. Reuses
+  the fill columns, one stage, pricing, void and edit. `V1_0_1` relaxes `ck_fill_target` (no water
+  volume without a cylinder). It is the first migration after the dev deploy; `V1_0_0` stays as
+  applied. It writes no data, so existing fills are untouched.
+- **One bank per draw:** two banks tapped means two records.
+- **A list line shows the bank's level** ("He · 150 bar · From He bank"), as `endPressureBar` is the
+  bank's on these fills.
+- `useFillPreview` and `FillResultCard` are shared by both forms instead of copying the preview.
+
+## 2026-10-31 — Orchestrator (scrubber tracking and per-team switches, the human's request)
+
+- **Own area, not a fill** (the human's call): own tab "Scrubber", tables, API and pricing
+  (DOMAIN §12); only the balances are shared. No generic "consumable" abstraction.
+- **Charged like a TRUE_UP bank** (the human's choice): an estimate at cost ÷ capacity while open,
+  and "it is empty now" shares the real cost by the recorded kg, so rough guesses still add up to
+  exactly what was paid. Over-recording cannot charge more than the cost.
+- **Any member can say it is empty**, unlike closing a bank (admin or creator): the person at the
+  empty canister is who knows, it needs a confirmation, and an admin can reopen it.
+- **Uses are deleted, not voided:** a wrong scoop is small and re-entered; the fill's edit, void
+  and audit machinery would not earn its keep.
+- **Switches:** `gasTrackingEnabled` / `scrubberTrackingEnabled` per team, both on by default, also
+  for existing teams (`V1_0_2`). Off hides that area and refuses new records with 409; corrections
+  of what exists keep working and existing money stays in the balances, or switching off would
+  silently change what people owe. Both off is allowed: Money and Team remain.
+- **Tab label "Scrubber"**, the word divers use. Tabs size to their label with a 44 px minimum, so
+  all seven fit at 320 px. Tabs of an area switched off disappear and the others widen.
+- **Policy comparison** includes scrubber money, so its balances match the real ones.
+- `CylinderSizeChips` became the generic `ui/QuickChips` (cylinder sizes, scoop amounts).
