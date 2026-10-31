@@ -73,7 +73,7 @@
         <AppButton type="submit" variant="secondary" :loading="renaming">Save</AppButton>
       </form>
       <p v-if="session.me" class="mt-2 break-all text-sm text-slate-500 dark:text-slate-400">
-        Signed in as {{ session.me.username ? `@${session.me.username}` : session.me.email }}
+        Signed in as {{ session.me.username ? `@${session.me.username}` : session.me.displayName }}
       </p>
     </AppCard>
 

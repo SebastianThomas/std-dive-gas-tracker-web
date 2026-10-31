@@ -850,7 +850,6 @@ export interface components {
     }
     MeResponse: {
       displayName: string
-      email: string
       teams: components['schemas']['TeamSummary'][]
       /** Format: int64 */
       userId: number
