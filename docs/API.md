@@ -34,7 +34,7 @@ Tokens are opaque to the frontend.
 Access tokens (task B0) are signed by the dive logger with **Ed25519 (EdDSA)**; the gas backend
 holds only **public** keys, so it can verify but never mint dive-logger tokens. Header `kid`
 selects the key (rotation: configure old and new public key during a switch). Required claims:
-`iss = "std-dive-logger"`, `uid` (dive-logger user id — the gas-tracker identity), `sub` (email,
+`iss = "std-dive-logger"`, `uid` (dive-logger user id — the gas-tracker identity), `username`, `sub` (email,
 the cached contact address), `exp`, and in production `email_verified: true`. Gas config:
 `ch.sthomas.stddivegastracker.auth.public-keys` (list of PEM Ed25519 public keys),
 `…auth.issuer`, `…auth.require-email-verified-claim`.
@@ -93,6 +93,19 @@ interface Member { memberId: number; email?: string /* invited email while PENDI
   displayName: string /* email local part while PENDING */; role: Role; status: MemberStatus;
   joinedAt: number; leftAt?: number }
 ```
+
+### Adding people
+
+`POST …/members` takes `{ username, role? }`: someone who has used the app at least once (unknown:
+400, no pending invitation, or anyone could register a mistyped name and join). `{ email, role? }`
+still works in the API but the app no longer offers it. `Member` carries `username`, no `email`.
+`Me` carries the caller's own `username` and `email`.
+
+| Method | Path | Result |
+|---|---|---|
+| GET / POST / DELETE | `/v1/teams/{teamId}/invite-link` | ADMIN. `{ token? }`: read / replace / turn off |
+| GET | `/v1/invites/{token}` | `{ teamId, teamName, alreadyMember }`, 404 for a dead link |
+| POST | `/v1/invites/{token}/join` | same; joins as MEMBER, 409 if you left or were removed |
 
 ## 3. Vessels (banks)
 

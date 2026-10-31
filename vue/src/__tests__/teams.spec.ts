@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_TEAMS,
   NEW_TEAM,
+  inviteUrl,
   isAreaOff,
   stillInUseWords,
   stockSentence,
@@ -29,6 +30,10 @@ describe('what a team tracks', () => {
 })
 
 describe('team selector', () => {
+  it('builds an invite link on this app', () => {
+    expect(inviteUrl('https://gas.example', 'abc_-1')).toBe('https://gas.example/join/abc_-1')
+  })
+
   it('leads to a team, the overview or the new-team form', () => {
     expect(teamChoiceRoute('7')).toEqual({ name: 'TeamHome', params: { teamId: '7' } })
     expect(teamChoiceRoute(ALL_TEAMS)).toEqual({ name: 'TeamsOverview' })

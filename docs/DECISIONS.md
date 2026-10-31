@@ -874,3 +874,32 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   Auto-merge only dev dependencies and GitHub Actions at minor/patch, and only on green checks;
   runtime dependencies, majors, Node and `openapi-typescript` wait for a person. The human is
   assignee and reviewer on every PR, auto-merged ones included, so they show up regularly.
+- **Backend repo too** (`std-dive-logger-backend/.github/renovate.json5`): auto-merge only test and
+  build tooling and GitHub Actions at minor/patch. Merging to main deploys nothing there, only a
+  `v*` tag does. Spring Boot gets its own PR. Postgres majors are switched off (the compose volumes
+  hold data a new major cannot read) and Java moves by hand with the pom.
+
+## 2026-10-31 — Orchestrator (Renovate fallout)
+
+- **`resolutions: { vite }` in `vue/package.json`.** Vitest allows Vite 8, so a lockfile refresh
+  installs Vite 8 for it next to our Vite 7, and Yarn 1 then fails to link ("could not find a copy
+  of vite to link"). One Vite for the whole tree avoids it. Moving to Vite 8 means changing both
+  places. Node 24 (CI) is not affected by the Node 25+ `localStorage` test failure.
+- **One Renovate config per repo.** Renovate reads only the first file it finds, in the order
+  `renovate.json`, `renovate.json5`, `.github/renovate.json`, `.github/renovate.json5`, so a root
+  `renovate.json` silently overrides the real config. Keep only `.github/renovate.json5`.
+
+## 2026-10-31 — Orchestrator (usernames, invite links, private emails: the human's request)
+
+- **The username already exists:** the dive logger's `name` is unique in its database and labelled
+  "Username" at signup, so no new account field or web change is needed. The access token gains a
+  `username` claim; old tokens without it keep the stored one.
+- **By username only finds people who have used the app:** the gas backend has no link to the dive
+  logger's accounts by design. An unknown name is refused, never a pending invitation: unlike a
+  verified email, anyone could register a mistyped name later and join, and share losses.
+- **Invite link for everyone else:** one per team, 256 random bits, reset or turned off by an admin.
+  It joins as MEMBER only, and cannot undo a removal.
+- **Emails are private:** gone from `Member`, so teammates never receive them. A new user's display
+  name starts from the username, not the email's local part. Existing display names are not
+  rewritten. **Add by email** is out of the app but still in the API, with the PENDING flow that
+  depends on it: its removal is a separate, larger decision for the human.

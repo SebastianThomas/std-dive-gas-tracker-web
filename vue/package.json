@@ -52,5 +52,8 @@
     "vite-plugin-vue-devtools": "^8.0.5",
     "vitest": "^4.0.16",
     "vue-tsc": "^3.2.1"
+  },
+  "resolutions": {
+    "vite": "^7.3.0"
   }
 }

@@ -125,6 +125,7 @@ as a top nav. The current team id is in the URL — never only in a store.
 |---|---|---|
 | `/login` | LoginView | S2 |
 | `/` | redirect to the last team's home; no team yet → create-team form | F2 |
+| `/join/:token` | JoinTeamView (invite link) | Invites |
 | `/teams` | TeamsOverviewView (all teams: my balance in each) | Team selector |
 | `/teams/new` | TeamCreateView | F2 |
 | `/t/:teamId` | Home: my balance, low banks, my last fills, "Record a fill" | F8 |

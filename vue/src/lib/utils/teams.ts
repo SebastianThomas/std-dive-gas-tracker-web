@@ -29,6 +29,11 @@ export function stillInUseWords(gasEnabled: boolean, scrubberEnabled: boolean): 
   return 'banks and canisters'
 }
 
+/** The page an invite link opens; the token is the whole secret. */
+export function inviteUrl(origin: string, token: string): string {
+  return `${origin}/join/${token}`
+}
+
 export const ALL_TEAMS = 'ALL'
 export const NEW_TEAM = 'NEW'
 

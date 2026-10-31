@@ -9,9 +9,9 @@
         }}<template v-if="member.status === 'PENDING'"> · invited</template>
       </span>
     </div>
-    <span v-if="member.email" class="break-all text-sm text-slate-500 dark:text-slate-400">{{
-      member.email
-    }}</span>
+    <span v-if="member.username" class="break-all text-sm text-slate-500 dark:text-slate-400"
+      >@{{ member.username }}</span
+    >
     <div v-if="team.isAdmin && !isMe" class="flex flex-wrap gap-2">
       <AppButton
         variant="ghost"

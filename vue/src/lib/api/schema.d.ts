@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+  '/v1/invites/{token}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['preview_1']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/invites/{token}/join': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['join']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/me': {
     parameters: {
       query?: never
@@ -127,6 +159,22 @@ export interface paths {
     put?: never
     post: operations['voidFill']
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/teams/{teamId}/invite-link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['inviteLink']
+    put?: never
+    post: operations['resetInviteLink']
+    delete: operations['turnOffInviteLink']
     options?: never
     head?: never
     patch?: never
@@ -505,9 +553,10 @@ export type webhooks = Record<string, never>
 export interface components {
   schemas: {
     AddMemberRequest: {
-      email: string
+      email?: string
       /** @enum {string} */
       role: 'ADMIN' | 'MEMBER'
+      username?: string
     }
     Balances: {
       currency: string
@@ -753,6 +802,15 @@ export interface components {
       /** Format: double */
       o2: number
     }
+    InviteLink: {
+      token?: string
+    }
+    InvitePreview: {
+      alreadyMember: boolean
+      /** Format: int64 */
+      teamId: number
+      teamName: string
+    }
     LossReport: {
       /** Format: double */
       drawnLitres: number
@@ -797,10 +855,10 @@ export interface components {
       teams: components['schemas']['TeamSummary'][]
       /** Format: int64 */
       userId: number
+      username?: string
     }
     Member: {
       displayName: string
-      email?: string
       /**
        * Format: int64
        * @description Epoch milliseconds
@@ -817,6 +875,7 @@ export interface components {
       role: 'ADMIN' | 'MEMBER'
       /** @enum {string} */
       status: 'ACTIVE' | 'PENDING' | 'LEFT'
+      username?: string
     }
     MemberBalance: {
       /**
@@ -1312,6 +1371,50 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
+  preview_1: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['InvitePreview']
+        }
+      }
+    }
+  }
+  join: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['InvitePreview']
+        }
+      }
+    }
+  }
   me: {
     parameters: {
       query?: never
@@ -1605,6 +1708,72 @@ export interface operations {
         }
         content: {
           '*/*': components['schemas']['Fill']
+        }
+      }
+    }
+  }
+  inviteLink: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['InviteLink']
+        }
+      }
+    }
+  }
+  resetInviteLink: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['InviteLink']
+        }
+      }
+    }
+  }
+  turnOffInviteLink: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['InviteLink']
         }
       }
     }

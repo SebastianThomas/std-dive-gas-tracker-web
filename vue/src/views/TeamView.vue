@@ -22,13 +22,11 @@
       >
         <h3 class="font-medium text-slate-800 dark:text-slate-200">Add a member</h3>
         <TextField
-          id="member-email"
-          v-model="email"
-          type="email"
-          inputmode="email"
+          id="member-username"
+          v-model="username"
           autocomplete="off"
-          label="Email of their STD Dive Log account"
-          hint="Someone who hasn't signed in yet is invited and joins on their first sign-in."
+          label="Their STD Dive Log username"
+          hint="They must have used this app once. New here? Send them the invite link."
         />
         <SelectField id="member-role" v-model="role" label="Role" class="max-w-56">
           <option value="MEMBER">Member</option>
@@ -36,6 +34,13 @@
         </SelectField>
         <AppButton type="submit" variant="secondary" :loading="adding">Add member</AppButton>
       </form>
+
+      <InviteLinkCard
+        v-if="team.isAdmin"
+        :key="teamId"
+        :team-id="teamId"
+        :team-name="team.team?.name ?? ''"
+      />
     </AppCard>
 
     <AppCard title="Settings">
@@ -68,7 +73,7 @@
         <AppButton type="submit" variant="secondary" :loading="renaming">Save</AppButton>
       </form>
       <p v-if="session.me" class="mt-2 break-all text-sm text-slate-500 dark:text-slate-400">
-        Signed in as {{ session.me.email }}
+        Signed in as {{ session.me.username ? `@${session.me.username}` : session.me.email }}
       </p>
     </AppCard>
 
@@ -107,6 +112,7 @@
 
 <script setup lang="ts">
 import PageShell from '@/components/layout/PageShell.vue'
+import InviteLinkCard from '@/components/team/InviteLinkCard.vue'
 import MemberRow from '@/components/team/MemberRow.vue'
 import TeamSettingsForm from '@/components/team/TeamSettingsForm.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -130,7 +136,7 @@ const router = useRouter()
 const team = useTeamStore()
 const session = useSessionStore()
 const { teamId } = useTeamRoute()
-const email = ref('')
+const username = ref('')
 const role = ref<Role>('MEMBER')
 const adding = ref(false)
 const displayName = ref(session.me?.displayName ?? '')
@@ -148,8 +154,11 @@ const former = computed(() => team.members.filter((member) => member.status === 
 async function addMember() {
   adding.value = true
   try {
-    await useTeamsApi().addMember(teamId.value, { email: email.value.trim(), role: role.value })
-    email.value = ''
+    await useTeamsApi().addMember(teamId.value, {
+      username: username.value.trim(),
+      role: role.value,
+    })
+    username.value = ''
     role.value = 'MEMBER'
     await team.reloadMembers()
   } catch (err) {

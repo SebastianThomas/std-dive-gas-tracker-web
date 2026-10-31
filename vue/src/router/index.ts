@@ -22,6 +22,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/join/:token',
+      name: 'JoinTeam',
+      component: () => import('@/views/JoinTeamView.vue'),
+      meta: { requiresAuth: true, title: 'Join a team' },
+    },
+    {
       path: '/teams',
       name: 'TeamsOverview',
       component: () => import('@/views/TeamsOverviewView.vue'),
