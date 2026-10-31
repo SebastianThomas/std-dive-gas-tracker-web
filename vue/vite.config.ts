@@ -20,6 +20,8 @@ export default defineConfig(() => {
           {
             src: 'node_modules/@fortawesome/fontawesome-free/webfonts/*',
             dest: 'webfonts',
+            // since v4 the source folders are kept: the CSS expects /webfonts/<file>
+            rename: { stripBase: true },
           },
         ],
       }),

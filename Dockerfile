@@ -12,6 +12,8 @@ RUN yarn install --frozen-lockfile
 
 COPY ./vue ./
 RUN yarn build-only --mode $BUILD_MODE
+# The icons fail silently in the browser if the fonts move (the CSS expects /webfonts/<file>).
+RUN test -s dist/webfonts/fa-solid-900.woff2
 
 # ---------- runner ----------
 FROM nginx:alpine

@@ -931,3 +931,6 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
   derived from the email. Display names already derived from an email are not rewritten.
 - **Yarn in the image:** `node:26-slim` has neither Yarn nor Corepack, so the Dockerfile installs Yarn
   1.22.22 itself. The checks never built the image, which is why the Node 26 update did not catch it.
+- **Icon fonts after `vite-plugin-static-copy` 4:** it keeps the source folders, so the fonts moved and
+  nginx answered their URLs with `index.html`. `rename: { stripBase: true }` puts them back. nginx
+  now answers a missing font with 404, and the image build fails if the font is not in place.
