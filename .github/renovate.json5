@@ -17,6 +17,8 @@
   reviewers: ['SebastianThomas'],
   assignAutomerge: true,
 
+  // Auto-merged rules wait until a release is 3 days old, so a broken or compromised one can
+  // be yanked first. Updates without a release date (some digests) are not held back forever.
   packageRules: [
     // Tooling: only needs the PR checks (type-check, lint, tests, build) to stay green.
     {
@@ -25,6 +27,8 @@
       matchUpdateTypes: ['minor', 'patch'],
       groupName: 'dev dependencies',
       automerge: true,
+      minimumReleaseAge: '3 days',
+      minimumReleaseAgeBehaviour: 'timestamp-optional',
     },
     // What ships to the phone: grouped, but a person looks at it. It has no browser test in CI.
     {
@@ -46,6 +50,8 @@
       matchUpdateTypes: ['minor', 'patch', 'digest'],
       groupName: 'github-actions',
       automerge: true,
+      minimumReleaseAge: '3 days',
+      minimumReleaseAgeBehaviour: 'timestamp-optional',
     },
     // Node runs the build image and CI: never auto-merged, and all places move together.
     {
