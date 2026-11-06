@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_URL: string
   /** The dive logger's sign-up page: accounts are created there. Unset: no link on the login page */
   readonly VITE_SIGNUP_URL?: string
+  /** The dive logger's account settings (username, email, password). Unset: no header link */
+  readonly VITE_ACCOUNT_URL?: string
   /** "true" only for local development: shows the dev-login form (backend profile dev-login) */
   readonly VITE_DEV_LOGIN?: string
 }

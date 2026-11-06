@@ -970,3 +970,12 @@ Clean verify: 594 tests, 0 Checkstyle violations, no compiler warnings; frontend
 - **The warning about reusing the link stays visible next to both choices** rather than as one more
   step: the choice is what matters and it costs no extra tap.
 - Links turned off before this change have no token any more, so they can't come back.
+
+## 2026-11-06 — Orchestrator (account settings link: the human's request)
+
+- **Username, email and password are changed in the dive logger**, which owns the account; the
+  header gets an "Account settings" icon (`fa-user-gear`) linking to its `/profile`
+  (`VITE_ACCOUNT_URL` per environment, same tab like the sign-up link). Unset locally: no link.
+- `AppButton` takes `href` for a link outside the app. A new username reaches this app with the
+  next token (`username` claim); an email change signs out everywhere, so the next request here
+  goes through the usual session-expired login.

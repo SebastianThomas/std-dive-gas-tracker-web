@@ -36,6 +36,16 @@
           />
         </AppButton>
         <AppButton
+          v-if="auth.isLoggedIn && account"
+          variant="ghost"
+          :href="account"
+          aria-label="Account settings"
+          title="Account settings"
+          data-testid="account-link"
+        >
+          <i class="fa-solid fa-user-gear" aria-hidden="true" />
+        </AppButton>
+        <AppButton
           v-if="auth.isLoggedIn"
           variant="ghost"
           aria-label="Log out"
@@ -50,6 +60,7 @@
 
 <script setup lang="ts">
 import AppButton from '@/components/ui/AppButton.vue'
+import { accountUrl } from '@/lib/globals/constants'
 import { ALL_TEAMS, NEW_TEAM, teamChoiceRoute } from '@/lib/utils/teams'
 import { useAuthStore } from '@/stores/auth'
 import { useSessionStore } from '@/stores/session'
@@ -63,6 +74,9 @@ const theme = useThemeStore()
 const session = useSessionStore()
 const route = useRoute()
 const router = useRouter()
+
+// Username, email and password live with the STD Dive Log account, so its own settings page.
+const account = accountUrl()
 
 // The team in the URL; the selector never holds state of its own.
 const teams = computed(() => (auth.isLoggedIn ? (session.me?.teams ?? []) : []))

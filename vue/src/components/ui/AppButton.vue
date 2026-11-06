@@ -7,6 +7,14 @@
   >
     <slot />
   </RouterLink>
+  <a
+    v-else-if="href"
+    :href="href"
+    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+    :class="variantClass"
+  >
+    <slot />
+  </a>
   <button
     v-else
     :type="type"
@@ -24,16 +32,18 @@ import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 // Base button: 44 px min tap height (min-h-11) - use it instead of hand-styled <button>s.
-// With `to` it renders a RouterLink that looks the same (navigation stays a link).
+// With `to` it renders a RouterLink that looks the same (navigation stays a link); `href` a plain
+// link, for pages outside this app.
 const props = withDefaults(
   defineProps<{
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'link'
     type?: 'button' | 'submit'
     to?: RouteLocationRaw
+    href?: string
     disabled?: boolean
     loading?: boolean
   }>(),
-  { variant: 'primary', type: 'button', to: undefined },
+  { variant: 'primary', type: 'button', to: undefined, href: undefined },
 )
 
 const variantClass = computed(
